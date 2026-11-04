@@ -1,0 +1,22 @@
+{
+  "name": "galeto-gestao",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sistema de gestão operacional da Galeto São Luís — projeto RTECH",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js",
+    "setup": "npm run migrate && npm run seed"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.5",
+    "express": "^5.3.0",
+    "express-rate-limit": "^7.4.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.11.0"
+  }
+}
