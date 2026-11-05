@@ -5,15 +5,15 @@ const MENU = [
     section: 'Operação',
     items: [
       { id: 'dashboard', label: 'Dashboard', href: '/pages/dashboard/', icon: 'grid' },
-      { id: 'estoque', label: 'Estoque', href: '/pages/breve/?m=estoque', icon: 'box', etapa: 2 },
+      { id: 'estoque', label: 'Estoque', href: '/pages/estoque/', icon: 'box' },
       { id: 'desperdicio', label: 'Desperdício', href: '/pages/breve/?m=desperdicio', icon: 'trash', etapa: 4 },
-      { id: 'validade', label: 'Validade', href: '/pages/breve/?m=validade', icon: 'calendar', etapa: 2 },
+      { id: 'validade', label: 'Lotes & Validade', href: '/pages/lotes/', icon: 'calendar' },
     ],
   },
   {
     section: 'Suprimentos',
     items: [
-      { id: 'compras', label: 'Compras', href: '/pages/breve/?m=compras', icon: 'cart', etapa: 3 },
+      { id: 'movimentacoes', label: 'Movimentações', href: '/pages/movimentacoes/', icon: 'cart' },
       { id: 'fornecedores', label: 'Fornecedores', href: '/pages/breve/?m=fornecedores', icon: 'truck', etapa: 3 },
     ],
   },

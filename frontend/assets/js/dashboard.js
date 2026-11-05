@@ -20,6 +20,10 @@
     return;
   }
 
+  const alertaValidade = (sum.proximosVencimento > 0 || sum.vencidos > 0)
+    ? `<div class="alert alert-info"><div><strong>Atenção à validade.</strong> ${sum.vencidos > 0 ? `Existem ${sum.vencidos} lote(s) vencido(s) e ` : ''}${sum.proximosVencimento} lote(s) vencendo em até 7 dias — baixe os lotes mais próximos (FEFO) ou registre desperdício quando necessário.</div><div class="spacer"></div><a class="btn btn-primary btn-sm" href="/pages/lotes/?vence=7">Ver lotes</a></div>`
+    : '';
+
   const actions = user.role === 'admin'
     ? `<a class="btn btn-primary btn-sm" href="/pages/usuarios/">Gerenciar funcionários</a>`
     : '';
@@ -29,7 +33,7 @@
       <div class="stat">
         <div class="label">Ingredientes cadastrados</div>
         <div class="value">${sum.ingredientes}</div>
-        <div class="hint">Módulo de estoque — Etapa 2</div>
+        <div class="hint">Cadastre e consulte em <a href="/pages/estoque/">Estoque</a></div>
       </div>
       <div class="stat ${sum.baixoEstoque > 0 ? 'is-warn' : ''}">
         <div class="label">Produtos com estoque baixo</div>
@@ -65,8 +69,8 @@
       </div>
     </div>
 
-    ${actions ? `<div class="alert alert-info"><div><strong>Etapa 1 quase concluída.</strong> Próximo passo do projeto: módulo de estoque (produtos, lotes e movimentações).</div>${actions.toUpperCase ? `<div class="spacer"></div>` : ''}</div>` : ''}
-
+    ${actions ? `<div class="alert alert-info"><div><strong>Etapa 2 concluída.</strong> Módulo de estoque operante: produtos, lotes, movimentações e FEFO.</div>${actions.toUpperCase ? `<div class="spacer"></div>` : ''}</div>` : ''}
+    ${alertaValidade}
     <div class="card">
       <div class="card__head">
         <h2>Atividade recente</h2>
