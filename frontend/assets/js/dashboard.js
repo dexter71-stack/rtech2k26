@@ -1,6 +1,5 @@
-// Dashboard — Etapa 1: indicadores reais do banco + atividade recente.
-// Os módulos de estoque/compras/desperdício alimentarão os demais
-// indicadores nas próximas etapas, sem alterar esta página.
+// Dashboard: indicadores reais do banco (estoque, validade, compras e
+// desperdício do mês) + atividade recente da auditoria.
 (async () => {
   const user = await renderLayout({
     page: 'dashboard',
@@ -58,10 +57,10 @@
         <div class="value">${sum.comprasMes.count}</div>
         <div class="hint">${sum.comprasMes.count > 0 ? `R$ ${sum.comprasMes.total.toFixed(2).replace('.', ',')} recebidos` : 'Nenhuma compra recebida no mês'}</div>
       </div>
-      <div class="stat">
+      <div class="stat ${sum.desperdicioMes.count > 0 ? 'is-danger' : ''}">
         <div class="label">Desperdício do mês</div>
-        <div class="value">—</div>
-        <div class="hint">Módulo de desperdício — Etapa 4</div>
+        <div class="value">${fmtMoney(sum.desperdicioMes.total)}</div>
+        <div class="hint">${sum.desperdicioMes.count > 0 ? `${sum.desperdicioMes.count} registro(s) em <a href="/pages/desperdicio/">Desperdício</a>` : 'Nenhuma perda registrada no mês'}</div>
       </div>
       <div class="stat is-ok">
         <div class="label">Funcionários ativos</div>
@@ -69,7 +68,7 @@
       </div>
     </div>
 
-    ${actions ? `<div class="alert alert-info"><div><strong>Etapa 3 concluída.</strong> Fornecedores e compras com recebimento que dá entrada no estoque automaticamente.</div>${actions.toUpperCase ? `<div class="spacer"></div>` : ''}</div>` : ''}
+    ${actions ? `<div class="alert alert-info"><div><strong>Etapa 4 concluída.</strong> Perdas registradas com baixa automática do estoque (vencidos primeiro) e prejuízo calculado no módulo Desperdício.</div><div class="spacer"></div><a class="btn btn-outline btn-sm" href="/pages/desperdicio/">Registrar perda</a></div>` : ''}
     ${alertaValidade}
     <div class="card">
       <div class="card__head">

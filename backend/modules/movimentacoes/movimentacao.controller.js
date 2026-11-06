@@ -29,17 +29,27 @@ exports.reverse = asyncHandler(async (req, res) => {
   res.status(201).json({ movement });
 });
 
-// Lista de lotes disponíveis de um produto (para escolha manual / FEFO no form).
+// Lista de lotes de um produto (para escolha manual / FEFO no form).
+// incluir_vencidos=1 traz também os vencidos; incluir_todos=1 traz TODO o
+// histórico de lotes (com e sem saldo), usado na tela de desperdício.
 exports.lotesProduto = asyncHandler(async (req, res) => {
   const productId = Number(req.params.productId);
   if (!Number.isInteger(productId) || productId <= 0) throw badRequest('Produto inválido.');
   const incluirVencidos = req.query.incluir_vencidos === '1';
+  const incluirTodos = req.query.incluir_todos === '1';
+  const filtroStatus = incluirTodos
+    ? ''
+    : incluirVencidos ? "AND status IN ('ativo','vencido')" : "AND status = 'ativo'";
+  const filtroSaldo = incluirTodos ? '' : 'AND remaining_qty > 0';
   const [rows] = await pool.query(
-    `SELECT id, code, remaining_qty, received_qty, received_date, expires_date, unit_cost, supplier_name, status
+    `SELECT id, code, remaining_qty, received_qty,
+            DATE_FORMAT(received_date, '%Y-%m-%d') AS received_date,
+            DATE_FORMAT(expires_date, '%Y-%m-%d') AS expires_date,
+            unit_cost, supplier_name, status
        FROM batches
-      WHERE product_id = ? ${incluirVencidos ? "AND status IN ('ativo','vencido')" : "AND status = 'ativo'"}
-          AND remaining_qty > 0
-      ORDER BY expires_date ASC, received_date ASC, id ASC`,
+      WHERE product_id = ? ${filtroStatus} ${filtroSaldo}
+      ORDER BY FIELD(status, 'ativo', 'vencido', 'esgotado', 'cancelado'),
+               expires_date ASC, received_date ASC, id ASC`,
     [productId]
   );
   const total = rows.reduce((s, r) => s + Number(r.remaining_qty), 0);

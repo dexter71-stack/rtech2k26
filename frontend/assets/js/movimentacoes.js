@@ -45,7 +45,9 @@ const TIPOS_MOV = [
             </div>
             <div class="field">
               <label for="m-produto">Produto *</label>
-              <select class="input" id="m-produto" required></select>
+              <input class="input" id="m-produto" list="m-prod-list" placeholder="Digite o nome do produto" autocomplete="off" required />
+              <datalist id="m-prod-list"></datalist>
+              <div class="hint" id="m-prod-hint">digite e escolha o produto na lista</div>
             </div>
           </div>
           <div class="form-row">
@@ -143,8 +145,24 @@ const TIPOS_MOV = [
     return `<span class="badge ${cls}">${label}</span>`;
   };
 
+  // O produto é digitado; a busca ignora caixa e acentos e exige nome cadastrado.
+  const normalizarNome = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  const produtoPorNome = (valor) => {
+    const alvo = normalizarNome(valor);
+    if (!alvo) return null;
+    const exatos = state.produtos.filter((p) => normalizarNome(p.name) === alvo);
+    if (exatos.length === 1) return exatos[0];
+    const parecidos = state.produtos.filter((p) => normalizarNome(p.name).includes(alvo));
+    return parecidos.length === 1 ? parecidos[0] : null;
+  };
+
+  let debounceProduto;
   $('#m-type').addEventListener('change', atualizarForm);
   $('#m-produto').addEventListener('change', atualizarProdutoInfo);
+  $('#m-produto').addEventListener('input', () => {
+    clearTimeout(debounceProduto);
+    debounceProduto = setTimeout(atualizarProdutoInfo, 300);
+  });
   $('#m-qtd').addEventListener('input', atualizarProdutoInfo);
   $('#mov-form').addEventListener('submit', onSubmit);
   $('#mov-clear').addEventListener('click', () => resetForm(false));
@@ -154,8 +172,8 @@ const TIPOS_MOV = [
   async function loadProdutos() {
     const data = await api('/api/produtos?pageSize=100&status=ativo');
     state.produtos = data.rows;
-    $('#m-produto').innerHTML = '<option value="">— selecione —</option>'
-      + state.produtos.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    const opcoes = state.produtos.map((p) => `<option value="${esc(p.name)}"></option>`).join('');
+    $('#m-prod-list').innerHTML = opcoes;
     $('#prod-list').innerHTML = state.produtos.map((p) => `<option value="${esc(p.name)}">`).join('');
   }
 
@@ -170,25 +188,31 @@ const TIPOS_MOV = [
     atualizarProdutoInfo();
   }
 
-  // Consulta lotes do produto escolhido para exibir saldo FEFO e lotes.
+  // Consulta lotes do produto digitado para exibir saldo FEFO e lotes.
   async function atualizarProdutoInfo() {
-    const prodId = $('#m-produto').value;
+    const produto = produtoPorNome($('#m-produto').value);
     const sel = $('#m-lote');
     sel.innerHTML = '<option value="">Automático (FEFO)</option>';
     $('#reg-estoque-info').textContent = '';
-    if (!prodId) return;
+    if (!produto) {
+      $('#m-prod-hint').textContent = $('#m-produto').value.trim()
+        ? 'produto não encontrado — digite o nome completo'
+        : 'digite e escolha o produto na lista';
+      state.lotesProduto = [];
+      return;
+    }
+    $('#m-prod-hint').textContent = `${produto.category_name || 'sem categoria'} · estoque: ${fmtNum(produto.current_stock)} ${produto.unit_symbol || ''}`;
+    if (produto.unit_symbol) $('#m-qtd-hint').textContent = `em ${produto.unit_symbol}`;
 
     try {
-      const data = await api(`/api/movimentacoes/produto/${prodId}/lotes`);
+      const data = await api(`/api/movimentacoes/produto/${produto.id}/lotes`);
       state.lotesProduto = data.rows;
       for (const l of data.rows) {
-        const dias = Math.ceil((new Date(l.expires_date) - new Date()) / 86400000);
+        const dias = Math.ceil((new Date(`${l.expires_date}T00:00:00`) - new Date()) / 86400000);
         const info = dias < 0 ? `VENCIDO ${-dias}d atrás` : `vence em ${dias}d`;
         sel.insertAdjacentHTML('beforeend',
           `<option value="${l.id}">Lote ${esc(l.code || `#${l.id}`)} — ${fmtNum(l.remaining_qty)} (${info})</option>`);
       }
-      const p = state.produtos.find((x) => x.id === Number(prodId));
-      if (p && p.unit_symbol) $('#m-qtd-hint').textContent = `em ${p.unit_symbol}`;
 
       const disponivel = elegivelFefo(data.rows).reduce((s, l) => s + Number(l.remaining_qty), 0);
       $('#reg-estoque-info').textContent = `Disponível na validade: ${fmtNum(disponivel)}`;
@@ -205,14 +229,21 @@ const TIPOS_MOV = [
     errBox.style.display = 'none';
 
     const tipo = $('#m-type').value;
+    const produto = produtoPorNome($('#m-produto').value);
+    if (!produto) {
+      mostrarErroNoForm(errBox, $('#m-produto').value.trim()
+        ? `Produto "${$('#m-produto').value.trim()}" não encontrado. Digite o nome completo de um produto cadastrado.`
+        : 'Digite o nome do produto e informe a quantidade.');
+      return;
+    }
     const body = {
       type: tipo,
-      product_id: $('#m-produto').value,
+      product_id: produto.id,
       quantity: $('#m-qtd').value,
       notes: $('#m-notes').value.trim(),
     };
-    if (body.product_id === '' || body.quantity === '') {
-      mostrarErroNoForm(errBox, 'Selecione o produto e informe a quantidade.');
+    if (body.quantity === '') {
+      mostrarErroNoForm(errBox, 'Informe a quantidade.');
       return;
     }
     if (tipo.startsWith('entrada')) {

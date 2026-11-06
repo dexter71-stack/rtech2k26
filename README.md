@@ -31,12 +31,21 @@ backend/
     users/        funcionários e permissões
     audit/        registro de atividades
     dashboard/    indicadores do painel
+    catalogo/     categorias e unidades
+    produtos/     cadastro de produtos
+    lotes/        lotes e validade (FEFO)
+    movimentacoes/ entradas, saídas e estornos
+    alertas/      estoque mínimo e validade
+    fornecedores/ cadastro e histórico de compras
+    compras/      pedidos, recebimento e estorno
+    desperdicios/ perdas, baixa no estoque e prejuízo
   routes/         centralizador das rotas da API
   app.js          montagem do Express (API + frontend estático)
   server.js       inicialização
 frontend/
   index.html      tela de login
-  pages/          dashboard/, usuarios/, breve/ (módulos futuros)
+  pages/          dashboard/, estoque/, lotes/, movimentacoes/, fornecedores/,
+                  compras/, desperdicio/, usuarios/, breve/ (módulos futuros)
   assets/         css/ e js/ (design system, layout, api)
 database/
   migrations/     estrutura do banco
@@ -85,6 +94,14 @@ scripts/          migrate.js, seed.js
 | POST | `/api/users/:id/activate` · `/deactivate` | Ativar/desativar conta | Administrador |
 | GET | `/api/audit` | Histórico de auditoria (filtros + paginação) | Administrador |
 
+## API — Desperdício (Etapa 4)
+
+| Método | Rota | Descrição | Acesso |
+|---|---|---|---|
+| GET | `/api/desperdicios` | Histórico de perdas (filtros `product_id`/`product` (nome), motivo, período e status) + resumo do prejuízo | Autenticado |
+| POST | `/api/desperdicios` | Registra a perda e baixa o estoque no lote informado (`batch_id`) ou em FEFO quando não informado | Autenticado |
+| POST | `/api/desperdicios/:id/estorno` | Devolve a quantidade aos lotes de origem e marca a perda como estornada | Administrador/Gerente |
+
 ## Segurança implementada
 
 - Senhas com hash **bcrypt** (custo 10).
@@ -98,11 +115,14 @@ scripts/          migrate.js, seed.js
 
 ## Status do projeto (por etapas)
 
-- ✅ **Etapa 1 — Fundação** (esta entrega): estrutura, banco, autenticação, permissões,
-  funcionários, auditoria, layout principal e dashboard inicial.
-- ⏭️ **Etapa 2 — Estoque:** produtos, categorias, unidades, lotes, movimentações, FEFO.
-- ⏭️ Etapa 3 — Compras e fornecedores · Etapa 4 — Desperdício ·
-  Etapa 5 — Comunicação, relatórios e dashboard completo · Etapa 6 — Testes e finalização.
+- ✅ **Etapa 1 — Fundação:** estrutura, banco, autenticação, permissões, funcionários,
+  auditoria, layout principal e dashboard inicial.
+- ✅ **Etapa 2 — Estoque:** produtos, categorias, unidades, lotes, movimentações, FEFO.
+- ✅ **Etapa 3 — Compras e fornecedores:** pedidos, recebimento com lotes e estorno.
+- ✅ **Etapa 4 — Desperdício:** registro de perdas por motivo, baixa automática do estoque
+  (vencidos primeiro), prejuízo pelo custo do lote, estorno e indicador no dashboard.
+- ⏭️ Etapa 5 — Comunicação, relatórios e dashboard completo ·
+  Etapa 6 — Testes e finalização.
 
 As tabelas de produtos, lotes e movimentações já existem no banco desde a Etapa 1,
 para que as próximas etapas se integrem sem reestruturar o banco.

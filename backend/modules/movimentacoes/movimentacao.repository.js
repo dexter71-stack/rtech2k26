@@ -32,7 +32,7 @@ async function marcarVencidos(conn) {
 
 async function encontrarProduto(conn, productId) {
   const [rows] = await conn.query(
-    `SELECT p.id, p.name, p.status, u.symbol AS unit_symbol
+    `SELECT p.id, p.name, p.status, p.reference_cost, u.symbol AS unit_symbol
        FROM products p LEFT JOIN units u ON u.id = p.unit_id
       WHERE p.id = ? FOR UPDATE`,
     [productId]

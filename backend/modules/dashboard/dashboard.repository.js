@@ -1,5 +1,5 @@
 // Repositório do dashboard: indicadores calculados no banco.
-// Compras já são reais (Etapa 3); o desperdício entra na Etapa 4.
+// Compras (Etapa 3) e desperdício (Etapa 4) entram nos totais do mês.
 const { pool } = require('../../config/db');
 
 async function summary() {
@@ -31,6 +31,12 @@ async function summary() {
       (SELECT COALESCE(SUM(total_amount), 0) FROM purchases
         WHERE status = 'recebida'
           AND DATE_FORMAT(received_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')) AS compras_mes_total,
+      (SELECT COUNT(*) FROM waste_records
+        WHERE status = 'registrado'
+          AND DATE_FORMAT(waste_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')) AS desperdicio_mes,
+      (SELECT COALESCE(SUM(total_cost), 0) FROM waste_records
+        WHERE status = 'registrado'
+          AND DATE_FORMAT(waste_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')) AS desperdicio_mes_total,
       (SELECT COUNT(*) FROM users WHERE status = 'ativo') AS funcionarios_ativos,
       (SELECT COUNT(*) FROM audit_log WHERE DATE(created_at) = CURDATE()) AS eventos_hoje
     `
@@ -51,7 +57,10 @@ async function summary() {
       count: Number(stats[0].compras_mes) || 0,
       total: Number(stats[0].compras_mes_total) || 0,
     },
-    desperdicioMes: null,
+    desperdicioMes: {
+      count: Number(stats[0].desperdicio_mes) || 0,
+      total: Number(stats[0].desperdicio_mes_total) || 0,
+    },
     atividade,
   };
 }

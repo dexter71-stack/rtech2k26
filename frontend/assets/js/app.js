@@ -6,7 +6,7 @@ const MENU = [
     items: [
       { id: 'dashboard', label: 'Dashboard', href: '/pages/dashboard/', icon: 'grid' },
       { id: 'estoque', label: 'Estoque', href: '/pages/estoque/', icon: 'box' },
-      { id: 'desperdicio', label: 'Desperdício', href: '/pages/breve/?m=desperdicio', icon: 'trash', etapa: 4 },
+      { id: 'desperdicio', label: 'Desperdício', href: '/pages/desperdicio/', icon: 'trash' },
       { id: 'validade', label: 'Lotes & Validade', href: '/pages/lotes/', icon: 'calendar' },
     ],
   },
