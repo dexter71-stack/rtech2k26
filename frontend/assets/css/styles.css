@@ -361,7 +361,21 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .modal__head { padding: 15px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; }
 .modal__head h3 { font-size: 15.5px; font-weight: 700; }
 .modal__head .close { margin-left: auto; background: none; border: 0; color: var(--muted); font-size: 20px; line-height: 1; padding: 4px; }
+.modal--wide { max-width: 780px; }
 .modal__body { padding: 18px; }
+
+/* Linhas de item do pedido de compra */
+.item-produto-cell { min-width: 0; }
+.item-produto-hint { font-size: 11px; line-height: 1.3; color: var(--muted); margin-top: 3px; }
+.item-produto-hint.is-danger { color: var(--danger); font-weight: 600; }
+.input[aria-invalid="true"] { border-color: var(--danger); }
+
+@media (max-width: 720px) {
+  .modal--wide { max-width: 100%; }
+  .item-row { grid-template-columns: 1fr 1fr !important; }
+  .item-row > .item-produto-cell { grid-column: 1 / -1; }
+  .item-row > button { grid-column: 1 / -1; justify-self: end; }
+}
 .modal__foot { padding: 13px 18px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; }
 
 /* ---------------- Toast ---------------- */

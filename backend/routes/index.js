@@ -11,6 +11,8 @@ const produtoRoutes = require('../modules/produtos/produto.routes');
 const loteRoutes = require('../modules/lotes/lote.routes');
 const movimentacaoRoutes = require('../modules/movimentacoes/movimentacao.routes');
 const alertaRoutes = require('../modules/alertas/alerta.routes');
+const fornecedorRoutes = require('../modules/fornecedores/fornecedor.routes');
+const compraRoutes = require('../modules/compras/compra.routes');
 
 const router = Router();
 
@@ -25,6 +27,8 @@ router.use('/produtos', produtoRoutes);
 router.use('/lotes', loteRoutes);
 router.use('/movimentacoes', movimentacaoRoutes);
 router.use('/alertas', alertaRoutes);
+router.use('/fornecedores', fornecedorRoutes);
+router.use('/compras', compraRoutes);
 
 router.use(() => {
   throw notFound('Rota de API não encontrada.');

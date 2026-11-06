@@ -1,6 +1,5 @@
 // Repositório do dashboard: indicadores calculados no banco.
-// Os indicadores de compras/desperdício ficam pendentes por enquanto:
-// suas tabelas são criadas nas Etapas 3 e 4.
+// Compras já são reais (Etapa 3); o desperdício entra na Etapa 4.
 const { pool } = require('../../config/db');
 
 async function summary() {
@@ -26,6 +25,12 @@ async function summary() {
           AND expires_date >= CURDATE() AND expires_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)) AS proximos_vencimento,
       (SELECT COUNT(*) FROM batches
         WHERE status = 'ativo' AND remaining_qty > 0 AND expires_date < CURDATE()) AS vencidos,
+      (SELECT COUNT(*) FROM purchases
+        WHERE status = 'recebida'
+          AND DATE_FORMAT(received_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')) AS compras_mes,
+      (SELECT COALESCE(SUM(total_amount), 0) FROM purchases
+        WHERE status = 'recebida'
+          AND DATE_FORMAT(received_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')) AS compras_mes_total,
       (SELECT COUNT(*) FROM users WHERE status = 'ativo') AS funcionarios_ativos,
       (SELECT COUNT(*) FROM audit_log WHERE DATE(created_at) = CURDATE()) AS eventos_hoje
     `
@@ -42,7 +47,10 @@ async function summary() {
     vencidos: Number(stats[0].vencidos) || 0,
     funcionariosAtivos: Number(stats[0].funcionarios_ativos) || 0,
     eventosHoje: Number(stats[0].eventos_hoje) || 0,
-    comprasMes: null,
+    comprasMes: {
+      count: Number(stats[0].compras_mes) || 0,
+      total: Number(stats[0].compras_mes_total) || 0,
+    },
     desperdicioMes: null,
     atividade,
   };

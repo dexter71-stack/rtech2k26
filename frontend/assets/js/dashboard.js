@@ -53,10 +53,10 @@
         <div class="label">Lotes vencidos</div>
         <div class="value">${sum.vencidos}</div>
       </div>
-      <div class="stat">
+      <div class="stat ${sum.comprasMes.count > 0 ? 'is-ok' : ''}">
         <div class="label">Compras do mês</div>
-        <div class="value">—</div>
-        <div class="hint">Módulo de compras — Etapa 3</div>
+        <div class="value">${sum.comprasMes.count}</div>
+        <div class="hint">${sum.comprasMes.count > 0 ? `R$ ${sum.comprasMes.total.toFixed(2).replace('.', ',')} recebidos` : 'Nenhuma compra recebida no mês'}</div>
       </div>
       <div class="stat">
         <div class="label">Desperdício do mês</div>
@@ -69,7 +69,7 @@
       </div>
     </div>
 
-    ${actions ? `<div class="alert alert-info"><div><strong>Etapa 2 concluída.</strong> Módulo de estoque operante: produtos, lotes, movimentações e FEFO.</div>${actions.toUpperCase ? `<div class="spacer"></div>` : ''}</div>` : ''}
+    ${actions ? `<div class="alert alert-info"><div><strong>Etapa 3 concluída.</strong> Fornecedores e compras com recebimento que dá entrada no estoque automaticamente.</div>${actions.toUpperCase ? `<div class="spacer"></div>` : ''}</div>` : ''}
     ${alertaValidade}
     <div class="card">
       <div class="card__head">

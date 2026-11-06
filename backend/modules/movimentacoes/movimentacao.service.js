@@ -2,6 +2,7 @@
 // Leitura de dados AINDA NÃO commitados só pode ser feita pela conexão `conn`;
 // consultas por `pool` visam dados já persistidos (usadas pós-commit).
 const repo = require('./movimentacao.repository');
+const compraRepository = require('../compras/compra.repository');
 const auditService = require('../audit/audit.service');
 const { LABELS } = require('./movimentacao.validator');
 const { badRequest, forbidden, notFound, conflict } = require('../../utils/errors');
@@ -154,7 +155,7 @@ async function create(data, actor) {
 
 // Estorno: compensa a movimentação original (auditável, sem deletar histórico).
 async function reverse(movementId, actor) {
-  const { estornoId } = await repo.withTransaction(async (conn) => {
+  const { estornoId, original } = await repo.withTransaction(async (conn) => {
     await repo.marcarVencidos(conn);
 
     const original = await repo.consultarMovimento(movementId);
@@ -193,7 +194,7 @@ async function reverse(movementId, actor) {
       notes: `Estorno do movimento #${original.id}${original.notes ? ` — ${original.notes}` : ''}`,
       reference: `mov:${original.id}`,
     });
-    return { estornoId };
+    return { estornoId, original };
   });
 
   const movement = await repo.consultarMovimento(estornoId);
@@ -205,6 +206,27 @@ async function reverse(movementId, actor) {
     description: `Estorno do movimento #${movementId} — ${movement.product_name}`,
     ip: actor.ip,
   });
+
+  // Entrada vinda de compra: quando todos os itens do pedido já foram
+  // estornados, o pedido vira 'estornada' e sai dos totais do fornecedor e
+  // do dashboard (que consideram apenas compras recebidas).
+  const origemCompra = original.type === 'entrada_compra'
+    ? /^compra:(\d+)$/.exec(original.reference || '')
+    : null;
+  if (origemCompra) {
+    const purchaseId = Number(origemCompra[1]);
+    if (await compraRepository.syncStatusFromMovements(purchaseId)) {
+      await auditService.log({
+        userId: actor.id,
+        action: 'ESTORNO',
+        module: 'Compras',
+        recordId: `compra:${purchaseId}`,
+        description: `Compra #${purchaseId} estornada — todos os itens recebidos foram devolvidos ao fornecedor`,
+        ip: actor.ip,
+      });
+    }
+  }
+
   return movement;
 }
 
