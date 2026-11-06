@@ -44,7 +44,13 @@ function validateItens(raw, orderDate, errors) {
     const n = idx + 1;
     const b = item || {};
     const productId = parseId(b.product_id);
-    if (!productId) errors.push(`Item ${n}: selecione o produto.`);
+    // Produto pode ser escolhido do catálogo (product_id) ou digitado
+    // (product_name): se o nome não existir, o cadastro é criado no salvamento.
+    const nomeProduto = String(b.product_name || '').trim().replace(/\s+/g, ' ');
+    const unidadeId = parseId(b.unit_id);
+    if (!productId && !nomeProduto) errors.push(`Item ${n}: digite o produto.`);
+    else if (!productId && nomeProduto.length < 2) errors.push(`Item ${n}: nome do produto muito curto (mínimo 2 caracteres).`);
+    else if (!productId && nomeProduto.length > 120) errors.push(`Item ${n}: nome do produto com no máximo 120 caracteres.`);
     const quantity = parseQty(b.quantity);
     if (quantity === null) errors.push(`Item ${n}: quantidade inválida (maior que zero).`);
     const unitCost = parseCost(b.unit_cost);
@@ -54,8 +60,16 @@ function validateItens(raw, orderDate, errors) {
     else if (orderDate && expires < orderDate) errors.push(`Item ${n}: a validade não pode ser anterior à data do pedido.`);
     const code = String(b.batch_code || '').trim();
     if (code.length > 60) errors.push(`Item ${n}: código do lote com no máximo 60 caracteres.`);
-    if (productId && quantity !== null && unitCost !== null && dataValida(expires)) {
-      itens.push({ product_id: productId, quantity, unit_cost: unitCost, expires_date: expires, batch_code: code || null });
+    if ((productId || nomeProduto) && quantity !== null && unitCost !== null && dataValida(expires)) {
+      itens.push({
+        product_id: productId,
+        product_name: productId ? null : nomeProduto,
+        unit_id: productId ? null : unidadeId,
+        quantity,
+        unit_cost: unitCost,
+        expires_date: expires,
+        batch_code: code || null,
+      });
     }
   });
   return itens;

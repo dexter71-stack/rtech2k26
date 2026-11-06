@@ -22,11 +22,13 @@ async function conferirCadastros(data) {
   if (!fornecedor) throw badRequest('Fornecedor não encontrado.');
   if (fornecedor.status !== 'ativo') throw badRequest('Este fornecedor está inativo e não pode receber novas compras.');
 
-  const ids = [...new Set(data.items.map((i) => i.product_id))];
+  // Itens com nome digitado (fora do catálogo) são cadastrados no salvamento.
+  const ids = [...new Set(data.items.filter((i) => i.product_id).map((i) => i.product_id))];
   const produtos = await compraRepository.findProdutos(ids);
   const porId = new Map(produtos.map((p) => [p.id, p]));
   const problemas = [];
   for (const item of data.items) {
+    if (!item.product_id) continue; // nome digitado: será cadastrado ao salvar
     const produto = porId.get(item.product_id);
     if (!produto) problemas.push(`Produto #${item.product_id} não encontrado.`);
     else if (produto.status !== 'ativo') problemas.push(`O produto "${produto.name}" está inativo.`);
@@ -35,9 +37,23 @@ async function conferirCadastros(data) {
   return fornecedor;
 }
 
+// Produto digitado que ainda não existia entra no catálogo junto com a compra.
+async function auditarProdutosCriados(novos, compraId, actor) {
+  for (const produto of novos) {
+    await auditService.log({
+      userId: actor.id,
+      action: 'CRIAR',
+      module: 'Produtos',
+      recordId: `produto:${produto.id}`,
+      description: `Produto "${produto.name}" cadastrado automaticamente ao salvar a compra #${compraId}`,
+      ip: actor.ip,
+    });
+  }
+}
+
 async function create(data, actor) {
   const fornecedor = await conferirCadastros(data);
-  const compra = await compraRepository.create(data, actor.id);
+  const { purchase: compra, novosProdutos } = await compraRepository.create(data, actor.id);
   await auditService.log({
     userId: actor.id,
     action: 'CRIAR',
@@ -46,6 +62,7 @@ async function create(data, actor) {
     description: `Compra #${compra.id} registrada — ${fornecedor.name} (${compra.items.length} item(ns), ${brl(compra.total_amount)})`,
     ip: actor.ip,
   });
+  await auditarProdutosCriados(novosProdutos, compra.id, actor);
   return compra;
 }
 
@@ -58,15 +75,15 @@ async function update(id, data, actor) {
     if (!fornecedor) throw badRequest('Fornecedor não encontrado.');
   }
   if (Array.isArray(data.items)) {
-    const ids = [...new Set(data.items.map((i) => i.product_id))];
+    const ids = [...new Set(data.items.filter((i) => i.product_id).map((i) => i.product_id))];
     const produtos = await compraRepository.findProdutos(ids);
     const porId = new Map(produtos.map((p) => [p.id, p]));
     const problemas = data.items
-      .filter((i) => !porId.get(i.product_id) || porId.get(i.product_id).status !== 'ativo')
+      .filter((i) => i.product_id && (!porId.get(i.product_id) || porId.get(i.product_id).status !== 'ativo'))
       .map((i) => `Produto #${i.product_id} inválido ou inativo.`);
     if (problemas.length) throw badRequest('Itens inválidos na compra.', problemas);
   }
-  const updated = await compraRepository.update(id, data);
+  const { purchase: updated, novosProdutos } = await compraRepository.update(id, data);
   await auditService.log({
     userId: actor.id,
     action: 'ALTERAR',
@@ -75,6 +92,7 @@ async function update(id, data, actor) {
     description: `Compra #${id} atualizada — ${updated.supplier_name} (${brl(updated.total_amount)})`,
     ip: actor.ip,
   });
+  await auditarProdutosCriados(novosProdutos, id, actor);
   return updated;
 }
 

@@ -77,9 +77,54 @@ class CompraRepository {
     return rows;
   }
 
+  // Validade/unidade do produto novo: unit_id enviado pela tela ou, na falta, kg.
+  async resolveUnidade(conn, unitId) {
+    if (unitId) {
+      const [rows] = await conn.query('SELECT id FROM units WHERE id = ?', [unitId]);
+      if (rows[0]) return rows[0].id;
+    }
+    const [kg] = await conn.query("SELECT id FROM units WHERE symbol = 'kg' LIMIT 1");
+    return kg[0] ? kg[0].id : null;
+  }
+
+  // O item pode vir do catálogo (product_id) ou apenas com o nome digitado.
+  // Nome que não existe é cadastrado na hora, na MESMA transação da compra:
+  // se a compra falhar, o produto também não fica criado. Retorna os itens com
+  // product_id resolvido e a lista de produtos criados (para auditoria).
+  async resolverItens(conn, items) {
+    const resolvidos = [];
+    const novos = [];
+    for (const item of items) {
+      if (item.product_id) {
+        resolvidos.push(item);
+        continue;
+      }
+      const nome = String(item.product_name || '').trim().replace(/\s+/g, ' ');
+      // Comparação sem diferenciar maiúsculas nem acentos (evita duplicar
+      // "Pão de alho" ao digitar "pao de alho").
+      const [existente] = await conn.query(
+        'SELECT id FROM products WHERE name = ? COLLATE utf8mb4_unicode_ci LIMIT 1',
+        [nome]
+      );
+      if (existente[0]) {
+        resolvidos.push({ ...item, product_id: existente[0].id, product_name: null });
+        continue;
+      }
+      const unitId = await this.resolveUnidade(conn, item.unit_id);
+      const [ins] = await conn.query(
+        "INSERT INTO products (name, unit_id, reference_cost, status) VALUES (?, ?, ?, 'ativo')",
+        [nome, unitId, item.unit_cost || 0]
+      );
+      novos.push({ id: ins.insertId, name: nome });
+      resolvidos.push({ ...item, product_id: ins.insertId, product_name: null });
+    }
+    return { itens: resolvidos, novos };
+  }
+
   async create(data, actorId) {
-    const purchaseId = await withTransaction(async (conn) => {
-      const total = totalDosItens(data.items);
+    const { purchaseId, novos } = await withTransaction(async (conn) => {
+      const { itens, novos: criados } = await this.resolverItens(conn, data.items);
+      const total = totalDosItens(itens);
       const [result] = await conn.query(
         `INSERT INTO purchases
            (supplier_id, status, order_date, expected_date, invoice_number, notes, total_amount, created_by)
@@ -88,35 +133,42 @@ class CompraRepository {
          data.invoice_number || null, data.notes || null, total, actorId]
       );
       const id = result.insertId;
-      for (const item of data.items) {
+      for (const item of itens) {
         await conn.query(
           `INSERT INTO purchase_items (purchase_id, product_id, quantity, unit_cost, expires_date, batch_code)
            VALUES (?, ?, ?, ?, ?, ?)`,
           [id, item.product_id, item.quantity, item.unit_cost || 0, item.expires_date, item.batch_code || null]
         );
       }
-      return id;
+      return { purchaseId: id, novos: criados };
     });
-    return this.findById(purchaseId);
+    return { purchase: await this.findById(purchaseId), novosProdutos: novos };
   }
 
   async update(id, data) {
-    await withTransaction(async (conn) => {
+    const { novos } = await withTransaction(async (conn) => {
+      let itens = null;
+      let criados = [];
+      if (Array.isArray(data.items)) {
+        const resolvidos = await this.resolverItens(conn, data.items);
+        itens = resolvidos.itens;
+        criados = resolvidos.novos;
+      }
       const fields = ['updated_at = NOW()'];
       const params = [];
       for (const key of ['supplier_id', 'order_date', 'expected_date', 'invoice_number', 'notes']) {
         if (data[key] !== undefined) { fields.push(`${key} = ?`); params.push(data[key]); }
       }
-      if (Array.isArray(data.items)) {
+      if (itens) {
         fields.push('total_amount = ?');
-        params.push(totalDosItens(data.items));
+        params.push(totalDosItens(itens));
       }
       params.push(id);
       await conn.query(`UPDATE purchases SET ${fields.join(', ')} WHERE id = ?`, params);
 
-      if (Array.isArray(data.items)) {
+      if (itens) {
         await conn.query('DELETE FROM purchase_items WHERE purchase_id = ?', [id]);
-        for (const item of data.items) {
+        for (const item of itens) {
           await conn.query(
             `INSERT INTO purchase_items (purchase_id, product_id, quantity, unit_cost, expires_date, batch_code)
              VALUES (?, ?, ?, ?, ?, ?)`,
@@ -124,8 +176,9 @@ class CompraRepository {
           );
         }
       }
+      return { novos: criados };
     });
-    return this.findById(id);
+    return { purchase: await this.findById(id), novosProdutos: novos };
   }
 
   // Receber: cria lote + movimentação de entrada para cada item, em transação.

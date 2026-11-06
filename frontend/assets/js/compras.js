@@ -14,7 +14,7 @@
 
   const state = {
     page: 1, pageSize: 20, total: 0, rows: [],
-    fornecedores: [], produtos: [], editingId: null, detailId: null,
+    fornecedores: [], produtos: [], unidades: [], editingId: null, detailId: null,
   };
 
   const pageEl = document.querySelector('.page');
@@ -70,12 +70,14 @@
   const brl = (v) => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
 
   async function carregarCadastros() {
-    const [forns, prods] = await Promise.all([
+    const [forns, prods, unidades] = await Promise.all([
       api('/api/fornecedores?pageSize=100&status=ativo'),
       api('/api/produtos?pageSize=100&status=ativo'),
+      api('/api/catalogo/unidades'),
     ]);
     state.fornecedores = forns.rows;
     state.produtos = prods.rows;
+    state.unidades = unidades.rows;
     $('#f-forn').innerHTML = '<option value="">Todos os fornecedores</option>'
       + state.fornecedores.map((f) => `<option value="${f.id}">${esc(f.name)}</option>`).join('');
   }
@@ -399,6 +401,12 @@
         <input class="input item-produto" list="produtos-datalist" autocomplete="off"
                placeholder="Digite o produto..." value="${item ? esc(item.product_name) : ''}" required />
         <div class="item-produto-hint"></div>
+        <div class="item-produto-novo" hidden>
+          <span>Produto novo — unidade:</span>
+          <select class="input item-unidade" aria-label="Unidade do produto novo">
+            ${state.unidades.map((u) => `<option value="${u.id}" ${u.symbol === 'kg' ? 'selected' : ''}>${esc(u.symbol)}</option>`).join('')}
+          </select>
+        </div>
       </div>
       <input class="input item-qtd" type="number" min="0.001" step="0.001" placeholder="Qtd." value="${item ? Number(item.quantity) : ''}" required />
       <input class="input item-custo" type="number" min="0" step="0.01" placeholder="Custo un." value="${item ? Number(item.unit_cost) : ''}" />
@@ -429,26 +437,41 @@
 
   function atualizarHint(input) {
     if (!input) return;
-    const hint = input.closest('.item-row')?.querySelector('.item-produto-hint');
+    const row = input.closest('.item-row');
+    const hint = row?.querySelector('.item-produto-hint');
+    const novoBox = row?.querySelector('.item-produto-novo');
     const produto = produtoDigitado(input.value);
+
     if (produto) {
       input.dataset.productId = produto.id;
       input.removeAttribute('aria-invalid');
+      if (novoBox) novoBox.hidden = true;
       if (hint) {
         hint.className = 'item-produto-hint';
         hint.textContent = `Unidade: ${produto.unit_symbol || '—'} · em estoque: ${fmtNum(produto.current_stock)}`;
       }
       return;
     }
+
     delete input.dataset.productId;
-    const vazio = !input.value.trim();
-    if (vazio) input.removeAttribute('aria-invalid');
-    else input.setAttribute('aria-invalid', 'true');
+    input.removeAttribute('aria-invalid');
+    const nome = input.value.trim();
+
+    if (novoBox) novoBox.hidden = !nome;
+    if (!nome) {
+      if (hint) {
+        hint.className = 'item-produto-hint';
+        hint.textContent = 'Digite o nome do produto — as sugestões do catálogo aparecem ao digitar.';
+      }
+      return;
+    }
+
+    // Nome fora do catálogo é permitido: o produto é cadastrado ao salvar.
     if (hint) {
-      hint.className = vazio ? 'item-produto-hint' : 'item-produto-hint is-danger';
-      hint.textContent = vazio
-        ? 'Digite o nome do produto — as sugestões do catálogo aparecem ao digitar.'
-        : 'Produto não encontrado no catálogo. Escolha uma das sugestões.';
+      hint.className = 'item-produto-hint is-novo';
+      hint.textContent = nome.length < 2
+        ? 'Digite ao menos 2 caracteres.'
+        : 'Produto novo — será cadastrado no catálogo ao salvar.';
     }
   }
 
@@ -456,14 +479,17 @@
     return [...document.querySelectorAll('#itens-box .item-row')].map((row) => {
       const input = row.querySelector('.item-produto');
       const produto = produtoDigitado(input.value);
+      const unidade = row.querySelector('.item-unidade');
       return {
-        product_id: produto ? produto.id : '',
+        product_id: produto ? produto.id : null,
+        product_name: produto ? null : input.value.trim(),
+        unit_id: produto ? null : (Number(unidade && unidade.value) || null),
         produto_digitado: input.value.trim(),
         quantity: row.querySelector('.item-qtd').value,
         unit_cost: row.querySelector('.item-custo').value || 0,
         expires_date: row.querySelector('.item-validade').value,
         batch_code: row.querySelector('.item-code').value.trim(),
-        sem_produto: !produto,
+        sem_nome: !produto && !input.value.trim(),
       };
     });
   }
@@ -480,9 +506,7 @@
 
     const itensLidos = lerItens();
     const problemas = itensLidos
-      .map((i, idx) => (i.sem_produto
-        ? `Item ${idx + 1}: ${i.produto_digitado ? `"${i.produto_digitado}" não está no catálogo de produtos.` : 'digite o produto.'}`
-        : null))
+      .map((i, idx) => (i.sem_nome ? `Item ${idx + 1}: digite o nome do produto.` : null))
       .filter(Boolean);
     if (problemas.length) {
       errBox.innerHTML = `Corrija os itens da compra:<ul style="margin-left:16px;">${problemas.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`;
@@ -496,8 +520,8 @@
       expected_date: document.getElementById('c-expected').value,
       invoice_number: document.getElementById('c-invoice').value.trim(),
       notes: document.getElementById('c-notes').value.trim(),
-      items: itensLidos.map(({ product_id, quantity, unit_cost, expires_date, batch_code }) => ({
-        product_id, quantity, unit_cost, expires_date, batch_code,
+      items: itensLidos.map(({ product_id, product_name, unit_id, quantity, unit_cost, expires_date, batch_code }) => ({
+        product_id, product_name, unit_id, quantity, unit_cost, expires_date, batch_code,
       })),
     };
     const btn = document.getElementById('c-save');
