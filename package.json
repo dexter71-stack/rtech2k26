@@ -6,6 +6,7 @@
   "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
+    "test": "node scripts/test-api.js",
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js",
     "setup": "npm run migrate && npm run seed"

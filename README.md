@@ -54,7 +54,8 @@ frontend/
 database/
   migrations/     estrutura do banco
   seeds/          dados iniciais demonstrativos
-scripts/          migrate.js, seed.js
+scripts/          migrate.js, seed.js, test-api.js
+tests/            suíte de integração da API (node:test)
 ```
 
 ## Como executar
@@ -73,6 +74,29 @@ scripts/          migrate.js, seed.js
    ```bash
    npm start            # http://localhost:3000
    ```
+
+## Testes automatizados
+
+```bash
+npm test
+```
+
+- Sobe a aplicação real em processo e cobre **autenticação/permissões, estoque**
+  (entrada, saída e estorno), **compras** (pedido, recebimento e estorno),
+  **desperdício** (baixa no lote, custo e estorno), **comunicação** (publicação,
+  leitura, arquivamento) e **configurações** (parâmetros, auditoria e permissões).
+- Usa um banco **isolado** `galeto_gestao_test`: criado, migrado e populado pelo
+  seed na hora, e apagado ao final. O banco de desenvolvimento não é tocado.
+- Runner nativo do Node (`node:test`), sem dependências adicionais.
+
+## Checklist antes de produção
+
+- [ ] Trocar as senhas dos usuários de demonstração (`admin`, `gerente`, `funcionario`).
+- [ ] Apagar/desativar produtos, lotes, compras, perdas e comunicados de **teste**.
+- [ ] Definir `NODE_ENV=production`, usar HTTPS e revisar o `JWT_SECRET` (forte e único).
+- [ ] Rodar `npm test` e conferir os parâmetros em **Configurações** (nome, contato e
+      janela de alerta de validade).
+- [ ] Revisar usuários ativos e permissões (administrador/gerente/funcionário).
 
 ## Acessos demonstrativos criados pelo seed
 
@@ -151,7 +175,8 @@ scripts/          migrate.js, seed.js
   e validade) com exportação CSV, valor do estoque e resumo do mês no dashboard.
 - ✅ **Etapa 6 — Configurações, auditoria e finalização:** parâmetros da galeteria
   (nome, contato e janela de alerta de validade usada no dashboard/alertas), tela de
-  auditoria completa com filtros por usuário/módulo/ação e exportação CSV.
+  auditoria completa com filtros por usuário/módulo/ação, exportação CSV e suíte de
+  testes de integração da API.
 
 Todas as etapas planejadas foram concluídas.
 
