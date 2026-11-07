@@ -16,6 +16,7 @@ const compraRoutes = require('../modules/compras/compra.routes');
 const desperdicioRoutes = require('../modules/desperdicios/desperdicio.routes');
 const comunicadoRoutes = require('../modules/comunicados/comunicado.routes');
 const relatorioRoutes = require('../modules/relatorios/relatorio.routes');
+const configuracaoRoutes = require('../modules/configuracoes/configuracao.routes');
 
 const router = Router();
 
@@ -35,6 +36,7 @@ router.use('/compras', compraRoutes);
 router.use('/desperdicios', desperdicioRoutes);
 router.use('/comunicados', comunicadoRoutes);
 router.use('/relatorios', relatorioRoutes);
+router.use('/configuracoes', configuracaoRoutes);
 
 router.use(() => {
   throw notFound('Rota de API não encontrada.');

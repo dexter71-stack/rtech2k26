@@ -10,19 +10,24 @@ async function insert({ userId, action, module, recordId, description, ip }) {
 }
 
 // Listagem paginada com filtros (somente administradores, controlado na rota).
-const STATUS_WHITELIST = { module: 'module', action: 'action' };
-
-async function list({ page, pageSize, moduleName, action, dateFrom, dateTo }) {
+async function list({ page, pageSize, moduleName, action, userName, dateFrom, dateTo }) {
   const where = [];
   const params = [];
 
   if (moduleName) { where.push('a.module LIKE ?'); params.push(`%${moduleName}%`); }
   if (action) { where.push('a.action LIKE ?'); params.push(`%${action}%`); }
+  if (userName) {
+    where.push('(u.name LIKE ? OR u.email LIKE ?)');
+    params.push(`%${userName}%`, `%${userName}%`);
+  }
   if (dateFrom) { where.push('a.created_at >= ?'); params.push(`${dateFrom} 00:00:00`); }
   if (dateTo) { where.push('a.created_at <= ?'); params.push(`${dateTo} 23:59:59`); }
   const whereSql = where.length ? ` WHERE ${where.join(' AND ')}` : '';
 
-  const [countRows] = await pool.query(`SELECT COUNT(*) AS count FROM audit_log a${whereSql}`, params);
+  const [countRows] = await pool.query(
+    `SELECT COUNT(*) AS count FROM audit_log a LEFT JOIN users u ON u.id = a.user_id${whereSql}`,
+    params
+  );
   const total = countRows[0].count;
 
   const [rows] = await pool.query(

@@ -2,7 +2,7 @@
 // Compras (Etapa 3), desperdício (Etapa 4) e comunicação (Etapa 5) entram nos totais.
 const { pool } = require('../../config/db');
 
-async function summary(userId) {
+async function summary(userId, alertDays = 7) {
   const [stats] = await pool.query(
     `
     SELECT
@@ -22,7 +22,7 @@ async function summary(userId) {
                          WHERE b.product_id = p.id AND b.status = 'ativo'), 0) = 0) AS sem_estoque,
       (SELECT COUNT(*) FROM batches
         WHERE status = 'ativo' AND remaining_qty > 0
-          AND expires_date >= CURDATE() AND expires_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)) AS proximos_vencimento,
+          AND expires_date >= CURDATE() AND expires_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)) AS proximos_vencimento,
       (SELECT COUNT(*) FROM batches
         WHERE status = 'ativo' AND remaining_qty > 0 AND expires_date < CURDATE()) AS vencidos,
       (SELECT COUNT(*) FROM purchases
@@ -48,7 +48,7 @@ async function summary(userId) {
       (SELECT COUNT(*) FROM users WHERE status = 'ativo') AS funcionarios_ativos,
       (SELECT COUNT(*) FROM audit_log WHERE DATE(created_at) = CURDATE()) AS eventos_hoje
     `,
-    [userId]
+    [alertDays, userId]
   );
 
   const atividade = await recentActivity(8);
@@ -72,6 +72,7 @@ async function summary(userId) {
     semEstoque: Number(stats[0].sem_estoque) || 0,
     proximosVencimento: Number(stats[0].proximos_vencimento) || 0,
     vencidos: Number(stats[0].vencidos) || 0,
+    alertaDias: Number(alertDays) || 7,
     funcionariosAtivos: Number(stats[0].funcionarios_ativos) || 0,
     eventosHoje: Number(stats[0].eventos_hoje) || 0,
     comprasMes: {

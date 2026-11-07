@@ -41,14 +41,15 @@ backend/
     desperdicios/ perdas, baixa no estoque e prejuízo
     comunicados/  mural interno, prioridade e leituras
     relatorios/   estoque, compras, desperdício e validade (JSON + CSV)
+    configuracoes/ parâmetros da galeteria (chave/valor)
   routes/         centralizador das rotas da API
   app.js          montagem do Express (API + frontend estático)
   server.js       inicialização
 frontend/
   index.html      tela de login
   pages/          dashboard/, estoque/, lotes/, movimentacoes/, fornecedores/,
-                  compras/, desperdicio/, comunicacao/, relatorios/, usuarios/,
-                  breve/ (módulos futuros)
+                  compras/, desperdicio/, comunicacao/, relatorios/, configuracoes/,
+                  usuarios/
   assets/         css/ e js/ (design system, layout, api)
 database/
   migrations/     estrutura do banco
@@ -117,6 +118,15 @@ scripts/          migrate.js, seed.js
 | GET | `/api/relatorios/:tipo` | `estoque`, `compras`, `desperdicio` ou `validade`, com filtros e resumo | Autenticado (compras: gestão) |
 | GET | `/api/relatorios/:tipo?format=csv` | Mesmo relatório e filtros em CSV (Excel pt-BR) | Autenticado (compras: gestão) |
 
+## API — Configurações e Auditoria (Etapa 6)
+
+| Método | Rota | Descrição | Acesso |
+|---|---|---|---|
+| GET | `/api/configuracoes` | Parâmetros da galeteria (nome, contato e janela de alerta) | Autenticado |
+| PUT | `/api/configuracoes` | Altera os parâmetros (auditado) | Administrador |
+| GET | `/api/audit` | Auditoria paginada (filtros `user`, `module`, `action`, período) | Administrador |
+| GET | `/api/audit?format=csv` | Mesma auditoria e filtros em CSV (até 5.000 eventos) | Administrador |
+
 ## Segurança implementada
 
 - Senhas com hash **bcrypt** (custo 10).
@@ -139,7 +149,11 @@ scripts/          migrate.js, seed.js
 - ✅ **Etapa 5 — Comunicação, relatórios e dashboard completo:** mural de comunicados com
   prioridade e confirmação de leitura, central de relatórios (estoque, compras, desperdício
   e validade) com exportação CSV, valor do estoque e resumo do mês no dashboard.
-- ⏭️ Etapa 6 — Testes e finalização.
+- ✅ **Etapa 6 — Configurações, auditoria e finalização:** parâmetros da galeteria
+  (nome, contato e janela de alerta de validade usada no dashboard/alertas), tela de
+  auditoria completa com filtros por usuário/módulo/ação e exportação CSV.
+
+Todas as etapas planejadas foram concluídas.
 
 As tabelas de produtos, lotes e movimentações já existem no banco desde a Etapa 1,
 para que as próximas etapas se integrem sem reestruturar o banco.

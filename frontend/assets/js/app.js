@@ -24,7 +24,7 @@ const MENU = [
       { id: 'comunicacao', label: 'Comunicação', href: '/pages/comunicacao/', icon: 'bell' },
       { id: 'relatorios', label: 'Relatórios', href: '/pages/relatorios/', icon: 'chart' },
       { id: 'usuarios', label: 'Funcionários', href: '/pages/usuarios/', icon: 'users', adminOnly: true },
-      { id: 'configuracoes', label: 'Configurações', href: '/pages/breve/?m=configuracoes', icon: 'gear', etapa: 6, adminOnly: true },
+      { id: 'configuracoes', label: 'Configurações', href: '/pages/configuracoes/', icon: 'gear', adminOnly: true },
     ],
   },
 ];
@@ -55,11 +55,19 @@ const ROLE_LABELS = { admin: 'Administrador', gerente: 'Gerente', funcionario: '
 // Constrói sidebar + topbar e retorna o usuário logado.
 async function renderLayout({ page, title, description }) {
   let user;
+  let settings = null;
   try {
-    user = (await api('/api/auth/me')).user;
+    // Nome do estabelecimento e janela de alerta vêm das configurações.
+    const [me, config] = await Promise.all([
+      api('/api/auth/me'),
+      api('/api/configuracoes').catch(() => null),
+    ]);
+    user = me.user;
+    settings = config ? config.settings : null;
   } catch (err) {
     return null; // api() já redireciona em caso de 401
   }
+  window.APP_SETTINGS = settings || { establishment_name: 'Galeto São Luís', alertDays: 7 };
 
   const headerActions = document.getElementById('page-actions');
   const menuHtml = MENU.map((group) => {
@@ -80,7 +88,7 @@ async function renderLayout({ page, title, description }) {
     <aside class="sidebar" id="sidebar">
       <div class="sidebar__brand">
         ${logoSvg(34)}
-        <div class="brand-name">Galeto Gestão<small>Galeto São Luís</small></div>
+        <div class="brand-name">Galeto Gestão<small>${esc(window.APP_SETTINGS.establishment_name)}</small></div>
       </div>
       <nav class="sidebar__nav">${menuHtml}</nav>
       <div class="sidebar__user">

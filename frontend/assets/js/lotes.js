@@ -75,7 +75,7 @@ const hoje = () => new Date().toISOString().slice(0, 10);
   async function loadProdutos() {
     const [produtos, alertas] = await Promise.all([
       api('/api/produtos?pageSize=100&status=ativo'),
-      api('/api/alertas?dias=7'),
+      api('/api/alertas'),
     ]);
     state.produtos = produtos.rows;
     $('#prod-list').innerHTML = state.produtos.map((p) => `<option value="${esc(p.name)}">`).join('');

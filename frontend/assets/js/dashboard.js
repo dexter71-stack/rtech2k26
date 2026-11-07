@@ -4,9 +4,13 @@
   const user = await renderLayout({
     page: 'dashboard',
     title: 'Dashboard',
-    description: 'Visão geral da operação da Galeto São Luís',
+    description: 'Visão geral da operação',
   });
   if (!user) return;
+
+  const alertaDias = (window.APP_SETTINGS && window.APP_SETTINGS.alertDays) || 7;
+  const descEl = document.querySelector('.topbar .desc');
+  if (descEl) descEl.textContent = `Visão geral da operação da ${window.APP_SETTINGS.establishment_name}`;
 
   const pageEl = document.querySelector('.page');
   pageEl.innerHTML = '<div class="loading"><div class="spinner"></div> Carregando indicadores...</div>';
@@ -20,7 +24,7 @@
   }
 
   const alertaValidade = (sum.proximosVencimento > 0 || sum.vencidos > 0)
-    ? `<div class="alert alert-info"><div><strong>Atenção à validade.</strong> ${sum.vencidos > 0 ? `Existem ${sum.vencidos} lote(s) vencido(s) e ` : ''}${sum.proximosVencimento} lote(s) vencendo em até 7 dias — baixe os lotes mais próximos (FEFO) ou registre desperdício quando necessário.</div><div class="spacer"></div><a class="btn btn-primary btn-sm" href="/pages/lotes/?vence=7">Ver lotes</a></div>`
+    ? `<div class="alert alert-info"><div><strong>Atenção à validade.</strong> ${sum.vencidos > 0 ? `Existem ${sum.vencidos} lote(s) vencido(s) e ` : ''}${sum.proximosVencimento} lote(s) vencendo em até ${sum.alertaDias || alertaDias} dias — baixe os lotes mais próximos (FEFO) ou registre desperdício quando necessário.</div><div class="spacer"></div><a class="btn btn-primary btn-sm" href="/pages/lotes/?vence=${sum.alertaDias || alertaDias}">Ver lotes</a></div>`
     : '';
 
   const actions = `<a class="btn btn-outline btn-sm" href="/pages/relatorios/">Relatórios</a>`
@@ -58,7 +62,7 @@
       <div class="stat ${sum.proximosVencimento > 0 ? 'is-warn' : ''}">
         <div class="label">Próximos do vencimento</div>
         <div class="value">${sum.proximosVencimento}</div>
-        <div class="hint">Lotes ativos vencendo em até 7 dias</div>
+        <div class="hint">Lotes ativos vencendo em até ${sum.alertaDias || alertaDias} dias</div>
       </div>
       <div class="stat">
         <div class="label">Lotes vencidos</div>
