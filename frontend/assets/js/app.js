@@ -52,6 +52,10 @@ function iconSvg(name, cls) {
 
 const ROLE_LABELS = { admin: 'Administrador', gerente: 'Gerente', funcionario: 'Funcionário' };
 
+// Atalhos da barra inferior no celular.
+const MOBILE_IDS = ['dashboard', 'estoque', 'validade', 'comunicacao'];
+const MOBILE_LABELS = { dashboard: 'Início', estoque: 'Estoque', validade: 'Lotes', comunicacao: 'Mural' };
+
 // Constrói sidebar + topbar e retorna o usuário logado.
 async function renderLayout({ page, title, description }) {
   let user;
@@ -70,11 +74,14 @@ async function renderLayout({ page, title, description }) {
   window.APP_SETTINGS = settings || { establishment_name: 'Galeto São Luís', alertDays: 7 };
 
   const headerActions = document.getElementById('page-actions');
+  const canSee = (it) => (!it.adminOnly || user.role === 'admin') && (!it.roles || it.roles.includes(user.role));
+
   const menuHtml = MENU.map((group) => {
     const links = group.items
-      .filter((it) => (!it.adminOnly || user.role === 'admin') && (!it.roles || it.roles.includes(user.role)))
+      .filter(canSee)
       .map((it) => `
-        <a class="sidebar__link ${it.id === page ? 'is-active' : ''}" href="${it.href}">
+        <a class="sidebar__link ${it.id === page ? 'is-active' : ''}" href="${it.href}"
+           ${it.id === page ? 'aria-current="page"' : ''}>
           ${iconSvg(it.icon)}
           <span>${it.label}</span>
           ${it.etapa ? `<span class="tag-etapa">Et. ${it.etapa}</span>` : ''}
@@ -83,47 +90,78 @@ async function renderLayout({ page, title, description }) {
     return `<div class="sidebar__section">${group.section}</div>${links}`;
   }).join('');
 
+  const mobileHtml = MENU.flatMap((g) => g.items)
+    .filter((it) => MOBILE_IDS.includes(it.id) && canSee(it))
+    .map((it) => `
+      <a class="mobile-nav__item ${it.id === page ? 'is-active' : ''}" href="${it.href}"
+         ${it.id === page ? 'aria-current="page"' : ''}>
+        ${iconSvg(it.icon)}
+        <span>${MOBILE_LABELS[it.id] || it.label}</span>
+      </a>`)
+    .join('');
+
+  const dataAtual = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+
   const initials = user.name.split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
   const shell = `
+    <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
     <aside class="sidebar" id="sidebar">
       <div class="sidebar__brand">
-        ${logoSvg(34)}
+        ${logoSvg(36)}
         <div class="brand-name">Galeto Gestão<small>${esc(window.APP_SETTINGS.establishment_name)}</small></div>
+        <button class="sidebar__close" id="sidebar-close" aria-label="Fechar menu">✕</button>
       </div>
       <nav class="sidebar__nav">${menuHtml}</nav>
       <div class="sidebar__user">
         <div class="avatar">${esc(initials)}</div>
-        <div class="who"><strong>${esc(user.name)}</strong><span>${esc(ROLE_LABELS[user.role])}</span></div>
+        <div class="who"><strong title="${esc(user.name)}">${esc(user.name)}</strong><span>${esc(ROLE_LABELS[user.role])}</span></div>
         <button class="btn-logout" id="btn-logout" title="Sair">${iconSvg('logout')}Sair</button>
       </div>
     </aside>
     <div class="backdrop" id="sidebar-backdrop"></div>
     <div class="app-main">
       <header class="topbar">
-        <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">${iconSvg('grid')}</button>
-        <div>
+        <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu" aria-expanded="false">${iconSvg('grid')}</button>
+        <div class="topbar__title">
           <h1>${title}</h1>
           ${description ? `<div class="desc">${description}</div>` : ''}
         </div>
+        <div class="topbar__date">${dataAtual}</div>
         <div class="topbar__actions" id="topbar-actions">${headerActions ? headerActions.innerHTML : ''}</div>
       </header>
-      <main class="page">${document.getElementById('page-content') ? document.getElementById('page-content').innerHTML : ''}</main>
-    </div>`;
+      <main class="page" id="main-content">${document.getElementById('page-content') ? document.getElementById('page-content').innerHTML : ''}</main>
+    </div>
+    <nav class="mobile-nav" aria-label="Navegação rápida">
+      ${mobileHtml}
+      <button class="mobile-nav__item" id="mobile-menu-btn" type="button" aria-label="Abrir menu completo">
+        ${iconSvg('grid')}<span>Menu</span>
+      </button>
+    </nav>`;
 
   document.getElementById('app-shell').innerHTML = shell;
   if (headerActions) headerActions.remove();
 
-  // Menu mobile.
+  // Menu mobile (drawer + barra inferior).
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('sidebar-backdrop');
-  document.getElementById('menu-toggle').addEventListener('click', () => {
+  const toggle = document.getElementById('menu-toggle');
+  const abrirMenu = () => {
     sidebar.classList.add('is-open');
     backdrop.classList.add('is-open');
-  });
-  backdrop.addEventListener('click', () => {
+    document.body.classList.add('drawer-open');
+    toggle.setAttribute('aria-expanded', 'true');
+  };
+  const fecharMenu = () => {
     sidebar.classList.remove('is-open');
     backdrop.classList.remove('is-open');
-  });
+    document.body.classList.remove('drawer-open');
+    toggle.setAttribute('aria-expanded', 'false');
+  };
+  toggle.addEventListener('click', abrirMenu);
+  document.getElementById('sidebar-close').addEventListener('click', fecharMenu);
+  document.getElementById('mobile-menu-btn').addEventListener('click', abrirMenu);
+  backdrop.addEventListener('click', fecharMenu);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fecharMenu(); });
 
   // Saída do sistema.
   document.getElementById('btn-logout').addEventListener('click', async () => {

@@ -75,11 +75,19 @@ function toast(message, type = 'success') {
 function openModal(id) { document.getElementById(id).classList.add('is-open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('is-open'); }
 
-// Marca/símbolo: folha dentro de quadra arredondada verde-escura.
+// Marca/símbolo: folha em gradiente neon dentro de um núcleo escuro.
 function logoSvg(size = 36) {
+  const uid = `gg-logo-${size}`;
   return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-    <rect x="1" y="1" width="38" height="38" rx="10" fill="#1f3d2b"/>
-    <path d="M11.5 28.5c0-9.4 6.7-15.4 17-17.3-1.2 13-8.7 16-14.2 15.5" stroke="#e3f1e9" stroke-width="2.4"
+    <defs>
+      <linearGradient id="${uid}" x1="8" y1="6" x2="32" y2="34" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#7dffc9"/><stop offset=".55" stop-color="#4cf5a8"/><stop offset="1" stop-color="#22d492"/>
+      </linearGradient>
+    </defs>
+    <rect x="1" y="1" width="38" height="38" rx="11" fill="#07130f" stroke="rgba(76,245,168,.38)"/>
+    <path d="M27.5 10.5c-10.7 2-17.2 8.2-17.2 17.9" stroke="rgba(76,245,168,.25)" stroke-width="1" stroke-linecap="round"/>
+    <path d="M11.5 28.5c0-9.4 6.7-15.4 17-17.3-1.2 13-8.7 16-14.2 15.5" stroke="url(#${uid})" stroke-width="2.2"
       stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="29.5" cy="10.2" r="1.6" fill="#4cf5a8"/>
   </svg>`;
 }

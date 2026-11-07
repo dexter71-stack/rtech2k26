@@ -16,7 +16,7 @@
     <div id="page-actions-host" style="margin-bottom:16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
       <input class="input" id="f-search" placeholder="Buscar produto..." style="max-width:260px;" />
       <select class="input" id="f-categoria" style="max-width:220px;"><option value="">Todas as categorias</option></select>
-      <select class="input" id="f-status" style="max-width:150px;">
+      <select class="input" id="f-status" style="max-width:180px;">
         ${podeGerenciar ? '<option value="">Ativos e inativos</option>' : ''}
         <option value="ativo" ${podeGerenciar ? '' : 'selected'}>Ativos</option>
         ${podeGerenciar ? '<option value="inativo">Inativos</option>' : ''}

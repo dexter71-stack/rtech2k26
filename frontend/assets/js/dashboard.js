@@ -134,7 +134,7 @@
                 <span>${esc(MOTIVO_LABEL[m.reason] || m.reason)}</span>
                 <span><strong>${fmtMoney(m.cost)}</strong> <span class="cell-muted">· ${m.count} registro(s)</span></span>
               </div>
-              <div style="height:6px; background:#eef1ef; border-radius:999px; overflow:hidden; margin-top:4px;">
+              <div style="height:6px; background:var(--track); border-radius:999px; overflow:hidden; margin-top:4px;">
                 <div style="height:100%; width:${maiorMotivo > 0 ? Math.max(6, Math.round((m.cost / maiorMotivo) * 100)) : 0}%; background:var(--danger);"></div>
               </div>
             </div>`).join('')}`

@@ -15,9 +15,9 @@
   const $ = (sel) => document.querySelector(sel);
 
   const PRIO = {
-    alta: { label: 'Alta', cls: 'badge-danger', cor: '#b3261e' },
-    media: { label: 'Média', cls: 'badge-warn', cor: '#a3590b' },
-    baixa: { label: 'Baixa', cls: 'badge-neutral', cor: '#68756d' },
+    alta: { label: 'Alta', cls: 'badge-danger', cor: '#ff5d73' },
+    media: { label: 'Média', cls: 'badge-warn', cor: '#ffb84d' },
+    baixa: { label: 'Baixa', cls: 'badge-neutral', cor: '#5f7c71' },
   };
 
   pageEl.innerHTML = `
