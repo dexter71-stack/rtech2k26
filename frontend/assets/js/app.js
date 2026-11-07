@@ -21,8 +21,8 @@ const MENU = [
   {
     section: 'Equipe & gestão',
     items: [
-      { id: 'comunicacao', label: 'Comunicação', href: '/pages/breve/?m=comunicacao', icon: 'bell', etapa: 5 },
-      { id: 'relatorios', label: 'Relatórios', href: '/pages/breve/?m=relatorios', icon: 'chart', etapa: 5 },
+      { id: 'comunicacao', label: 'Comunicação', href: '/pages/comunicacao/', icon: 'bell' },
+      { id: 'relatorios', label: 'Relatórios', href: '/pages/relatorios/', icon: 'chart' },
       { id: 'usuarios', label: 'Funcionários', href: '/pages/usuarios/', icon: 'users', adminOnly: true },
       { id: 'configuracoes', label: 'Configurações', href: '/pages/breve/?m=configuracoes', icon: 'gear', etapa: 6, adminOnly: true },
     ],

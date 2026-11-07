@@ -39,13 +39,16 @@ backend/
     fornecedores/ cadastro e histórico de compras
     compras/      pedidos, recebimento e estorno
     desperdicios/ perdas, baixa no estoque e prejuízo
+    comunicados/  mural interno, prioridade e leituras
+    relatorios/   estoque, compras, desperdício e validade (JSON + CSV)
   routes/         centralizador das rotas da API
   app.js          montagem do Express (API + frontend estático)
   server.js       inicialização
 frontend/
   index.html      tela de login
   pages/          dashboard/, estoque/, lotes/, movimentacoes/, fornecedores/,
-                  compras/, desperdicio/, usuarios/, breve/ (módulos futuros)
+                  compras/, desperdicio/, comunicacao/, relatorios/, usuarios/,
+                  breve/ (módulos futuros)
   assets/         css/ e js/ (design system, layout, api)
 database/
   migrations/     estrutura do banco
@@ -102,6 +105,18 @@ scripts/          migrate.js, seed.js
 | POST | `/api/desperdicios` | Registra a perda e baixa o estoque no lote informado (`batch_id`) ou em FEFO quando não informado | Autenticado |
 | POST | `/api/desperdicios/:id/estorno` | Devolve a quantidade aos lotes de origem e marca a perda como estornada | Administrador/Gerente |
 
+## API — Comunicação e Relatórios (Etapa 5)
+
+| Método | Rota | Descrição | Acesso |
+|---|---|---|---|
+| GET | `/api/comunicados` | Mural com prioridade, marcação de lido e contadores (arquivados: gestão) | Autenticado |
+| POST | `/api/comunicados` | Publica um comunicado | Administrador/Gerente |
+| POST | `/api/comunicados/:id/lido` | Marca o comunicado como lido | Autenticado |
+| POST | `/api/comunicados/:id/arquivar` · `/reabrir` | Tira do mural / devolve ao mural | Administrador/Gerente |
+| GET | `/api/comunicados/:id/leituras` | Quem leu e quando | Administrador/Gerente |
+| GET | `/api/relatorios/:tipo` | `estoque`, `compras`, `desperdicio` ou `validade`, com filtros e resumo | Autenticado (compras: gestão) |
+| GET | `/api/relatorios/:tipo?format=csv` | Mesmo relatório e filtros em CSV (Excel pt-BR) | Autenticado (compras: gestão) |
+
 ## Segurança implementada
 
 - Senhas com hash **bcrypt** (custo 10).
@@ -110,7 +125,7 @@ scripts/          migrate.js, seed.js
 - **Rate limiting** no login; proteção contra CSRF por guarda de mesma origem.
 - Consultas **100% parametrizadas** (sem SQL Injection).
 - Validação de dados no **backend** (e feedback no frontend), erros centralizados.
-- **Auditoria** de login, logout e operações de funcionários.
+- **Auditoria** de login, logout, operações de funcionários e comunicados.
 - Cabeçalhos de segurança (`nosniff`, anti-clickjacking, referrer policy).
 
 ## Status do projeto (por etapas)
@@ -121,8 +136,10 @@ scripts/          migrate.js, seed.js
 - ✅ **Etapa 3 — Compras e fornecedores:** pedidos, recebimento com lotes e estorno.
 - ✅ **Etapa 4 — Desperdício:** registro de perdas por motivo, baixa automática do estoque
   (vencidos primeiro), prejuízo pelo custo do lote, estorno e indicador no dashboard.
-- ⏭️ Etapa 5 — Comunicação, relatórios e dashboard completo ·
-  Etapa 6 — Testes e finalização.
+- ✅ **Etapa 5 — Comunicação, relatórios e dashboard completo:** mural de comunicados com
+  prioridade e confirmação de leitura, central de relatórios (estoque, compras, desperdício
+  e validade) com exportação CSV, valor do estoque e resumo do mês no dashboard.
+- ⏭️ Etapa 6 — Testes e finalização.
 
 As tabelas de produtos, lotes e movimentações já existem no banco desde a Etapa 1,
 para que as próximas etapas se integrem sem reestruturar o banco.

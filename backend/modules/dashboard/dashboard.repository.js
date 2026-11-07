@@ -1,8 +1,8 @@
 // Repositório do dashboard: indicadores calculados no banco.
-// Compras (Etapa 3) e desperdício (Etapa 4) entram nos totais do mês.
+// Compras (Etapa 3), desperdício (Etapa 4) e comunicação (Etapa 5) entram nos totais.
 const { pool } = require('../../config/db');
 
-async function summary() {
+async function summary(userId) {
   const [stats] = await pool.query(
     `
     SELECT
@@ -37,16 +37,37 @@ async function summary() {
       (SELECT COALESCE(SUM(total_cost), 0) FROM waste_records
         WHERE status = 'registrado'
           AND DATE_FORMAT(waste_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')) AS desperdicio_mes_total,
+      (SELECT COALESCE(SUM(b.remaining_qty * COALESCE(NULLIF(b.unit_cost, 0), p.reference_cost, 0)), 0)
+         FROM batches b JOIN products p ON p.id = b.product_id
+        WHERE b.status IN ('ativo', 'vencido') AND b.remaining_qty > 0 AND p.status = 'ativo') AS estoque_valor,
+      (SELECT COUNT(*) FROM announcements WHERE status = 'ativo') AS comunicados_ativos,
+      (SELECT COUNT(*) FROM announcements a
+        WHERE a.status = 'ativo'
+          AND NOT EXISTS (SELECT 1 FROM announcement_reads r
+                           WHERE r.announcement_id = a.id AND r.user_id = ?)) AS comunicados_nao_lidos,
       (SELECT COUNT(*) FROM users WHERE status = 'ativo') AS funcionarios_ativos,
       (SELECT COUNT(*) FROM audit_log WHERE DATE(created_at) = CURDATE()) AS eventos_hoje
-    `
+    `,
+    [userId]
   );
 
   const atividade = await recentActivity(8);
+  const [motivos] = await pool.query(
+    `SELECT reason, COUNT(*) AS count, COALESCE(SUM(total_cost), 0) AS cost
+       FROM waste_records
+      WHERE status = 'registrado'
+        AND DATE_FORMAT(waste_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+      GROUP BY reason
+      ORDER BY cost DESC, count DESC
+      LIMIT 3`
+  );
 
   return {
     ingredientes: Number(stats[0].ingredientes) || 0,
-    valorEstoque: { quantidade: stats[0].estoque_qtd },
+    valorEstoque: {
+      quantidade: stats[0].estoque_qtd,
+      valor: Number(stats[0].estoque_valor) || 0,
+    },
     baixoEstoque: Number(stats[0].baixo_estoque) || 0,
     semEstoque: Number(stats[0].sem_estoque) || 0,
     proximosVencimento: Number(stats[0].proximos_vencimento) || 0,
@@ -60,6 +81,15 @@ async function summary() {
     desperdicioMes: {
       count: Number(stats[0].desperdicio_mes) || 0,
       total: Number(stats[0].desperdicio_mes_total) || 0,
+      porMotivo: motivos.map((m) => ({
+        reason: m.reason,
+        count: Number(m.count) || 0,
+        cost: Number(m.cost) || 0,
+      })),
+    },
+    comunicados: {
+      ativos: Number(stats[0].comunicados_ativos) || 0,
+      naoLidos: Number(stats[0].comunicados_nao_lidos) || 0,
     },
     atividade,
   };

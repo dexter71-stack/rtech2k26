@@ -23,9 +23,21 @@
     ? `<div class="alert alert-info"><div><strong>Atenção à validade.</strong> ${sum.vencidos > 0 ? `Existem ${sum.vencidos} lote(s) vencido(s) e ` : ''}${sum.proximosVencimento} lote(s) vencendo em até 7 dias — baixe os lotes mais próximos (FEFO) ou registre desperdício quando necessário.</div><div class="spacer"></div><a class="btn btn-primary btn-sm" href="/pages/lotes/?vence=7">Ver lotes</a></div>`
     : '';
 
-  const actions = user.role === 'admin'
-    ? `<a class="btn btn-primary btn-sm" href="/pages/usuarios/">Gerenciar funcionários</a>`
-    : '';
+  const actions = `<a class="btn btn-outline btn-sm" href="/pages/relatorios/">Relatórios</a>`
+    + (user.role === 'admin' ? ' <a class="btn btn-primary btn-sm" href="/pages/usuarios/">Gerenciar funcionários</a>' : '');
+
+  const MOTIVO_LABEL = {
+    vencido: 'Passou da validade',
+    avaria: 'Avaria / dano',
+    preparo: 'Erro de preparo',
+    sobra: 'Sobra de produção',
+    outro: 'Outro motivo',
+  };
+  const motivos = sum.desperdicioMes.porMotivo || [];
+  const maiorMotivo = motivos.reduce((m, x) => Math.max(m, Number(x.cost) || 0), 0);
+  const perdasSobreCompras = sum.comprasMes.total > 0
+    ? ((sum.desperdicioMes.total / sum.comprasMes.total) * 100).toFixed(1).replace('.', ',')
+    : null;
 
   pageEl.innerHTML = `
     <div class="stats-grid">
@@ -52,6 +64,16 @@
         <div class="label">Lotes vencidos</div>
         <div class="value">${sum.vencidos}</div>
       </div>
+      <div class="stat">
+        <div class="label">Valor em estoque</div>
+        <div class="value">${fmtMoney(sum.valorEstoque.valor)}</div>
+        <div class="hint">custo dos lotes com saldo</div>
+      </div>
+      <div class="stat ${sum.comunicados.naoLidos > 0 ? 'is-warn' : 'is-ok'}">
+        <div class="label">Comunicados não lidos</div>
+        <div class="value">${sum.comunicados.naoLidos}</div>
+        <div class="hint">${sum.comunicados.ativos} no mural · <a href="/pages/comunicacao/">abrir mural</a></div>
+      </div>
       <div class="stat ${sum.comprasMes.count > 0 ? 'is-ok' : ''}">
         <div class="label">Compras do mês</div>
         <div class="value">${sum.comprasMes.count}</div>
@@ -68,12 +90,57 @@
       </div>
     </div>
 
-    ${actions ? `<div class="alert alert-info"><div><strong>Etapa 4 concluída.</strong> Perdas registradas com baixa automática do estoque (vencidos primeiro) e prejuízo calculado no módulo Desperdício.</div><div class="spacer"></div><a class="btn btn-outline btn-sm" href="/pages/desperdicio/">Registrar perda</a></div>` : ''}
+    <div class="alert alert-info">
+      <div><strong>Etapa 5 concluída.</strong> Mural de comunicados com confirmação de leitura e central de relatórios com exportação em CSV.</div>
+      <div class="spacer"></div>
+      <a class="btn btn-outline btn-sm" href="/pages/comunicacao/">Comunicação</a>
+      <a class="btn btn-outline btn-sm" href="/pages/relatorios/">Relatórios</a>
+    </div>
     ${alertaValidade}
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card__head" style="flex-wrap:wrap; gap:8px;">
+        <h2>Resumo do mês</h2>
+        <span class="sub">compras recebidas × desperdício registrado</span>
+        <span class="spacer"></span>
+        ${actions}
+      </div>
+      <div class="card__body">
+        <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:18px;">
+          <div>
+            <div style="font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px;">Compras recebidas</div>
+            <div style="font-size:21px; font-weight:700;">${fmtMoney(sum.comprasMes.total)}</div>
+            <div class="hint">${sum.comprasMes.count} pedido(s) no mês</div>
+          </div>
+          <div>
+            <div style="font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px;">Desperdício</div>
+            <div style="font-size:21px; font-weight:700; color:${sum.desperdicioMes.total > 0 ? 'var(--danger)' : 'inherit'};">${fmtMoney(sum.desperdicioMes.total)}</div>
+            <div class="hint">${sum.desperdicioMes.count} registro(s) no mês</div>
+          </div>
+          <div>
+            <div style="font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px;">Perdas sobre compras</div>
+            <div style="font-size:21px; font-weight:700;">${perdasSobreCompras ? `${perdasSobreCompras}%` : '—'}</div>
+            <div class="hint">${perdasSobreCompras ? 'quanto do comprado virou perda' : 'sem compras recebidas no mês'}</div>
+          </div>
+        </div>
+        ${motivos.length ? `
+          <div style="font-size:13px; font-weight:600; margin-bottom:10px;">Principais motivos de perda</div>
+          ${motivos.map((m) => `
+            <div style="margin-bottom:9px;">
+              <div style="display:flex; justify-content:space-between; font-size:13px;">
+                <span>${esc(MOTIVO_LABEL[m.reason] || m.reason)}</span>
+                <span><strong>${fmtMoney(m.cost)}</strong> <span class="cell-muted">· ${m.count} registro(s)</span></span>
+              </div>
+              <div style="height:6px; background:#eef1ef; border-radius:999px; overflow:hidden; margin-top:4px;">
+                <div style="height:100%; width:${maiorMotivo > 0 ? Math.max(6, Math.round((m.cost / maiorMotivo) * 100)) : 0}%; background:var(--danger);"></div>
+              </div>
+            </div>`).join('')}`
+          : '<div class="cell-muted" style="font-size:13px;">Nenhuma perda registrada neste mês.</div>'}
+      </div>
+    </div>
     <div class="card">
       <div class="card__head">
         <h2>Atividade recente</h2>
-        <span class="sub">Registros da auditoria do sistema${user.role === 'admin' ? ' — histórico completo em Relatórios (Etapa 5)' : ''}</span>
+        <span class="sub">Registros da auditoria do sistema</span>
         <span class="spacer"></span>
         <button class="btn btn-outline btn-sm" onclick="location.reload()">Atualizar</button>
       </div>

@@ -2,18 +2,24 @@
 // Aviso honesto: sem dados fictícios, apenas o planejamento da etapa.
 (async () => {
   const MODULES = {
-    comunicacao: { title: 'Comunicação', stage: 'Etapa 5', desc: 'Mural de comunicados internos com prioridade e marcação de lidos.', icon: 'bell' },
-    relatorios: { title: 'Relatórios', stage: 'Etapa 5', desc: 'Central de relatórios de estoque, compras, desperdício e validade, com exportação.', icon: 'chart' },
-    configuracoes: { title: 'Configurações', stage: 'Etapa 6', desc: 'Ajustes do sistema, auditoria completa e parâmetros da galeteria.', icon: 'gear' },
+    configuracoes: {
+      title: 'Configurações',
+      stage: 'Etapa 6',
+      desc: 'Ajustes do sistema, auditoria completa e parâmetros da galeteria.',
+      icon: 'gear',
+    },
   };
 
   const params = new URLSearchParams(location.search);
-  const key = params.get('m') || 'comunicacao';
-  const mod = MODULES[key] || MODULES.comunicacao;
+  const key = params.get('m') || 'configuracoes';
+  const mod = MODULES[key] || MODULES.configuracoes;
 
-  const user = await renderLayout({ page: key, title: mod.title, description: `Módulo planejado para a ${mod.stage.toLowerCase()} do projeto.` });
+  const user = await renderLayout({
+    page: key,
+    title: mod.title,
+    description: `Módulo planejado para a ${mod.stage.toLowerCase()} do projeto.`,
+  });
   if (!user) return;
-  if (mod.adminOnly) requireAdminOrRedirect(user);
 
   document.querySelector('.page').innerHTML = `
     <div class="card">
@@ -27,6 +33,6 @@
     <div class="alert alert-info">
       <strong style="font-weight:700;">Sistema em construção por etapas.</strong>&nbsp;
       Já estão prontos: autenticação com permissões, funcionários, auditoria, estoque e lotes,
-      fornecedores e compras, movimentações e desperdício.
+      fornecedores e compras, movimentações, desperdício, comunicação interna e relatórios.
     </div>`;
 })();
