@@ -1,31 +1,24 @@
-// Pool de conexão com o PostgreSQL (Supabase).
-// Configurado para funcionar no Render (Node.js) conectando no Supabase.
-// Usa SSL obrigatório e connectionString padrão do Supabase.
+// Pool de conexão com o banco de dados (MySQL/MariaDB).
+// Quantidades e valores financeiros chegam como string do DECIMAL
+// para preservar precisão; conversão só ocorre na camada de exibição.
 require('dotenv').config();
-const { Pool } = require('pg');
+const mysql = require('mysql2/promise');
 
-// Usar connectionString pronto do Supabase (funciona melhor que separar host/port)
-// Substitua os valores abaixo se mudar a senha ou o projeto:
-const connectionString = process.env.DB_CONNECTION_STRING ||
-  'postgres://postgres:A2b2d2s3103@db.urkhppoeathgffpqdqxd.supabase.co:5432/postgres?sslmode=require';
+const config = {
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: Number(process.env.DB_PORT || 3308),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'galeto_gestao',
+};
 
-const pool = new Pool({
-  connectionString,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-  // Quebrar conexões idle após 1 hora
-  idleTimeout: 600000,
-  connectionTimeout: 20000,
+const pool = mysql.createPool({
+  ...config,
+  waitForConnections: true,
+  connectionLimit: 10,
+  namedPlaceholders: true,
+  // Controla fuso/serialização de datas (DATETIME como objeto Date).
+  dateStrings: ['DATETIME'],
 });
 
-pool.on('connect', (client) => {
-  client.query('SET timezone = "UTC"');
-});
-
-pool.on('error', (err) => {
-  console.error('❌ Erro no pool do PostgreSQL (idle client)', err);
-  process.exit(-1);
-});
-
-module.exports = { pool };
+module.exports = { pool, config };
