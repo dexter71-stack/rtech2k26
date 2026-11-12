@@ -1,11 +1,6 @@
-// Seeds — Etapa 1 (FUNDAMENTAÇÃO).
-// Conteúdo INCORPORADO apenas como demonstração: usuários de teste com
-// senha padrão, além de categorias e unidades de medida previstas no prompt.
-// Nenhum produto fictício é criado (os produtos reais serão cadastrados
-// pela equipe na Etapa 2).
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
-const { pool, config } = require('../backend/config/db');
+const mysql = require('mysql2/promise');
 
 const DEMO_PASSWORD = 'Galeto@2026';
 
@@ -55,35 +50,41 @@ const DEMO_USERS = [
 ];
 
 async function run() {
+  const pool = await mysql.createConnection({
+    host: process.env.DB_HOST || '127.0.0.1',
+    port: Number(process.env.DB_PORT || 3308),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'galeto_gestao',
+  });
+
   // Unidades de medida do domínio.
   for (const unit of DOMAIN_UNITS) {
     await pool.query(
-      'INSERT INTO units (name, symbol) SELECT ?, ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM units WHERE symbol = ?)',
+      'INSERT INTO units (name, symbol) SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM units WHERE symbol = ?)',
       [unit.name, unit.symbol, unit.symbol]
     );
   }
-  console.log(`✅ ${DOMAIN_UNITS.length} unidades de medida garantidas`);
+  console.log('✅ ' + DOMAIN_UNITS.length + ' unidades de medida garantidas');
 
   // Categorias iniciais de galeteria.
   for (const name of DEMO_CATEGORY) {
     await pool.query(
-      'INSERT INTO categories (name) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = ?)',
+      'INSERT INTO categories (name) SELECT ? WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = ?)',
       [name, name]
     );
   }
-  console.log(`✅ ${DEMO_CATEGORY.length} categorias garantidas`);
+  console.log('✅ ' + DEMO_CATEGORY.length + ' categorias garantidas');
 
   // Usuários demonstrativos com senha compartilhada (trocar após o 1º acesso).
   for (const user of DEMO_USERS) {
     await pool.query(
-      `INSERT INTO users (name, email, username, password_hash, position, role, status)
-       SELECT ?, ?, ?, ?, ?, ?, 'ativo' FROM DUAL
-       WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = ?)`,
-      [user.name, user.email, user.username, await bcrypt.hash(DEMO_PASSWORD, 10), user.position, user.role, user.email]
+      'INSERT INTO users (name, email, username, password_hash, position, role, status) SELECT ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = ?)',
+      [user.name, user.email, user.username, await bcrypt.hash(DEMO_PASSWORD, 10), user.position, user.role, 'ativo', user.email]
     );
   }
   console.log('✅ Usuários demonstrativos garantidos (demonstração)');
-  console.log(`   senha padrão de demonstração: ${DEMO_PASSWORD}`);
+  console.log('   senha padrão de demonstração: ' + DEMO_PASSWORD);
 
   await pool.end();
   console.log('Seeds concluídas.');

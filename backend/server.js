@@ -9,9 +9,8 @@ const port = Number(process.env.PORT || 3000);
 async function start() {
   // Verifica o banco antes de abrir a porta.
   try {
-    const connection = await pool.getConnection();
-    await connection.ping();
-    connection.release();
+    // No PostgreSQL (pg.Pool), usamos pool.query('SELECT 1') para testar
+    await pool.query('SELECT 1');
     console.log(`✅ Banco conectado: ${config.host}:${config.port}/${config.database}`);
   } catch (err) {
     console.error('❌ Falha na conexão com o banco de dados:', err.message);

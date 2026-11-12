@@ -7,7 +7,7 @@ const { config } = require('../backend/config/db');
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'database', 'migrations');
 
 async function run() {
-  // Conecta sem selecionar banco para criar o schema, se necessário.
+  // Conecta sem selecionar banco para criar o schema, se necessario.
   const bootstrap = await mysql.createConnection({
     host: config.host,
     port: config.port,
@@ -15,14 +15,17 @@ async function run() {
     password: config.password,
     multipleStatements: true,
   });
-  await bootstrap.query(`CREATE DATABASE IF NOT EXISTS \`${config.database}\` CHARACTER SET utf8mb4`);
-  await bootstrap.query(`USE \`${config.database}\``);
-  await bootstrap.query(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      name VARCHAR(255) PRIMARY KEY,
-      applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+
+  // Criar database
+  await bootstrap.query('CREATE DATABASE IF NOT EXISTS `' + config.database + '` CHARACTER SET utf8mb4');
+
+  // Usar database
+  await bootstrap.query('USE `' + config.database + '`');
+
+  // Tabela de controle de migratorios
+  await bootstrap.query(
+    'CREATE TABLE IF NOT EXISTS schema_migrations (name VARCHAR(255) PRIMARY KEY, applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)'
+  );
 
   const [applied] = await bootstrap.query('SELECT name FROM schema_migrations');
   const appliedNames = new Set(applied.map((row) => row.name));
@@ -32,13 +35,13 @@ async function run() {
 
   for (const file of files) {
     if (appliedNames.has(file)) {
-      console.log(`↺  ${file} já aplicada`);
+      console.log('â—¦  ' + file + ' ja aplicada');
       continue;
     }
     const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8');
     await bootstrap.query(sql);
     await bootstrap.query('INSERT INTO schema_migrations (name) VALUES (?)', [file]);
-    console.log(`✅ ${file} aplicada`);
+    console.log('✅ ' + file + ' aplicada');
   }
 
   await bootstrap.end();
