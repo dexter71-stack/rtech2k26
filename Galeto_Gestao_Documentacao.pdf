@@ -1,0 +1,375 @@
+Galeto Gestão - Sistema de Gestão Operacional
+Documentação Completa
+
+================================================================================
+ÍNDICE
+================================================================================
+
+1. Visão Geral .................................................... 3
+2. Tela de Login .................................................. 4
+3. Dashboard .................................................... 5
+4. Módulos do Sistema ........................................... 6
+   4.1 Estoque .................................................. 6
+   4.2 Compras .................................................. 8
+   4.3 Desperdício .............................................. 10
+   4.4 Lotes .................................................. 12
+   4.5 Fornecedores ............................................. 14
+   4.6 Usuários .................................................. 16
+   4.7 Configurações ............................................ 18
+   4.8 Comunicações ............................................. 20
+   4.9 Movimentações ............................................ 22
+   4.10 Relatórios .............................................. 24
+5. Dados de Demonstração ......................................... 26
+6. Como Rodar Localmente ......................................... 27
+
+================================================================================
+1. VISÃO GERAL
+================================================================================
+
+O Galeto Gestão é um sistema de gestão operacional desenvolvido para a 
+Galeto São Luís, focado no controle da operação de uma galinheira/avicultura.
+
+Objetivo Principal:
+- Controle total do estoque e validade dos produtos
+- Gestão de compras e fornecedores
+- Controle de desperdício e lotes
+- Mural da equipe e comunicações internas
+- Relatórios para tomada de decisão
+
+Arquitetura Atual (Local MySQL):
+- Frontend: HTML/CSS/JS puro (servido por qualquer servidor web)
+- Backend: Node.js com MySQL2
+- Banco de Dados: MySQL/MariaDB local
+- Dados de Demonstração: Usuários admin, gerente e funcionário
+
+================================================================================
+2. TELA DE LOGIN
+================================================================================
+
+URL: http://localhost:3000 ou http://IP-do-servidor:3000
+
+Funcionalidades:
+- Campo "Usuário ou e-mail": Aceita o nome de usuário ou endereço de e-mail
+- Campo "Senha": Campo de senha masked (••••••••)
+- Botão "Entrar no sistema": Acesse com as credenciais de demonstração
+
+Usuários de Demonstração (já cadastrados no banco MySQL):
+
+| Login | Senha | Perfil |
+|-------|-------|--------|
+| admin | Galeto@2026 | Administrador completo |
+| gerente | Galeto@2026 | Acesso gerencial |
+| funcionario | Galeto@2026 | Acesso de funcionário |
+
+Objetivo: Autenticar o usuário no sistema e redirecionar para o dashboard
+caso as credenciais sejam válidas.
+
+================================================================================
+3. DASHBOARD
+================================================================================
+
+Acessado após o login bem-sucedido.
+
+Visão geral da operação com:
+- Cards resumo com estatísticas principais
+- Indicadores em tempo real
+- Atalhos rápidos para os módulos principais
+
+Componentes do Dashboard:
+1. Cards de estatísticas (estoque, válidos, expirados, etc.)
+2. Gráficos de evolução
+3. Alertas de validade próxima
+4. Mural de mensagens da equipe
+5. Atalhos para módulos principais (Estoque, Compras, etc.)
+
+================================================================================
+4. MÓDULOS DO SISTEMA
+================================================================================
+
+O sistema possui os seguintes módulos de acesso pelo menu lateral:
+
+================================================================================
+4.1 ESTOQUE
+================================================================================
+
+Funcionalidade: Controle total do estoque da galinheira.
+
+Principais funções:
+- Listar todos os produtos do estoque
+- Consultar status de validade (válidos, expirando, expirados)
+- Filtrar produtos por status (ativo, inativo)
+- Cadastrar novos produtos no estoque
+- Editar informações de produtos existentes
+- Excluir produtos do estoque
+
+Campos importantes:
+- Nome do produto
+- Código/Referência
+- Quantidade em estoque
+- Data de validade
+- Lote de fabricação
+- Status (ativo/inativo)
+
+================================================================================
+4.2 COMPRAS
+================================================================================
+
+Funcionalidade: Gestão de compras e fornecedores.
+
+Principais funções:
+- Cadastrar novas compras
+- Listar historico de compras
+- Consultar fornecedores cadastrados
+- Registrar recebimento de produtos
+- Controlar status das compras (pendente, recebida, cancelada)
+
+Informações registradas:
+- Data da compra
+- Fornecedor
+- Produtos adquiridos
+- Quantidade
+- Valor total
+- Forma de pagamento
+
+================================================================================
+4.3 DESPERDÍCIO
+================================================================================
+
+Funcionalidade: Controle e registro de desperdício de produtos.
+
+Principais funções:
+- Registrar desperdício de produtos
+- Listar histórico de desperdícios
+- Filtrar por data ou produto
+- Calcular total de desperdício em período
+- Relatar causas do desperdício
+
+Dados registrados:
+- Produto desperdiçado
+- Quantidade
+- Data/hora do ocorrido
+- Motivo/causa
+- Responsável
+
+================================================================================
+4.4 LOTES
+================================================================================
+
+Funcionalidade: Controle de lotes de produção/validade.
+
+Principais funções:
+- Cadastrar novos lotes
+- Listar lotes ativos
+- Consultar validade por lote
+- Atualizar status dos lotes
+- Relacionar lotes com produtos
+
+Informações do lote:
+- Número do lote
+- Data de fabricação
+- Data de validade
+- Quantidade total
+- Produtos associados
+- Status (ativo, expirado, consumido)
+
+================================================================================
+4.5 FORNECEDORES
+================================================================================
+
+Funcionalidade: Cadastro e gestão de fornecedores.
+
+Principais funções:
+- Cadastrar novos fornecedores
+- Listar todos os fornecedores
+- Editar informações do fornecedor
+- Excluir fornecedor (quando applicable)
+- Avaliar desempenho do fornecedor
+
+Dados do fornecedor:
+- Razão social / Nome fantasia
+- CNPJ
+- Contato (telefone/email)
+- Endereço
+- Produtos/serviços fornecidos
+- Condições de pagamento
+
+================================================================================
+4.6 USUÁRIOS
+================================================================================
+
+Funcionalidade: Cadastro e gestão de usuários do sistema.
+
+Principais funções:
+- Cadastrar novos usuários
+- Listar usuários do sistema
+- Definir perfis de acesso (admin, gerente, funcionario)
+- Editar dados do usuário
+- Resetar senha quando necessário
+- Controlar status ativo/inativo
+
+Perfis de acesso:
+- ADMIN: Acesso total a todos os módulos
+- GERENTE: Acesso a módulos gerenciais
+- FUNCIONARIO: Acesso às operações diárias
+
+================================================================================
+4.7 CONFIGURAÇÕES
+================================================================================
+
+Funcionalidade: Configurações gerais do sistema.
+
+Principais funções:
+- Configurar parâmetros do sistema
+- Definir valores padrão para produtos
+- Configurar alertas de validade
+- Parâmetros de comunicação
+- Configuração de horários de operação
+- Definir unidades de medida
+- Parâmetros de estoque (mínimo, máximo, alerta)
+
+================================================================================
+4.8 COMUNICAÇÕES
+================================================================================
+
+Funcionalidade: Mural da equipe - comunicação interna.
+
+Principais funções:
+- Postar mensagens no mural
+- Listar mensagens anteriores
+- Filtrar por data ou autor
+- Marcar mensagens como lidas
+- Sugestões e avisos da administração
+
+Conteúdo típico:
+- Avisos de mudanças de horário
+- Mensagens de boas-vindas
+- Alertos operacionais
+- Reconhecimento de equipe
+- Informações gerais
+
+================================================================================
+4.9 MOVIMENTAÇÕES
+================================================================================
+
+Funcionalidade: Registro de movimentações de estoque.
+
+Principais funções:
+- Registrar entradas de estoque
+- Registrar saídas de estoque
+- Listar histórico de movimentações
+- Filtrar por produto, data ou responsável
+- Conciliar inventário
+
+Tipos de movimentação:
+- ENTRADA: Produto entrando no estoque
+- SAÍDA: Produto saindo do estoque (venda, desperdício, etc.)
+- Ajuste: Correção de inventário
+
+================================================================================
+4.10 RELATÓRIOS
+================================================================================
+
+Funcionalidade: Geração de relatórios para tomada de decisão.
+
+Principais funções:
+- Gerar relatório de estoque atual
+- Relatório de validade de produtos
+- Relatório de compras por período
+- Relatório de desperdício
+- Relatório de movimentações
+- Exportar em formato CSV/PDF
+- Filtrar por data, produto, usuário, etc.
+
+Tipos de relatório disponíveis:
+- Estoque Atual
+- validade e Próximo Vencimento
+- Movimentações do Mês
+- Desperdício por Período
+- Desempenho de Fornecedores
+- Rentabilidade Operacional
+
+================================================================================
+5. DADOS DE DEMONSTRAÇÃO
+================================================================================
+
+O sistema vem com dados de teste preenchidos para demonstração:
+
+Usuários de Teste:
+- admin / Galeto@2026 (acesso total)
+- gerente / Galeto@2026 (acesso gerencial)
+- funcionario / Galeto@2026 (acesso limitado)
+
+Produtos de Exemplo:
+- Vários produtos de aves e insumos já cadastrados
+- Datas de validade distribuídas (algumas próximas do vencimento)
+- Quantidades variadas para demonstração de relatórios
+
+Configurações Padrão:
+- Unidades de medida padronizadas
+- Parâmetros de alerta de validade (ex: alertar com 5 dias de antecedência)
+- Configurações de horário de operação
+
+================================================================================
+6. COMO RODAR LOCALMENTE
+================================================================================
+
+Pré-requisitos:
+- Node.js instalado (versão 14+ recomendada)
+- MySQL ou MariaDB instalado e rodando
+
+Passo a Passo:
+
+1. Instalar dependências:
+   npm install
+
+2. Configurar o banco de dados:
+   - Criar um banco de dados chamado "galeto_gestao"
+   - Importar os dados de demonstração (ou deixar o seed.js rodar)
+   - As tabelas serão criadas automaticamente ou via migrations
+
+3. Configurar variáveis de ambiente:
+   Copie o arquivo .env.example para .env:
+   cp backend/.env.example backend/.env
+
+   Edite o arquivo .env com seus dados:
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_USER=seu_usuario
+   DB_PASSWORD=sua_senha
+   DB_NAME=galeto_gestao
+
+   (Opcional) JWT_SECRET para autenticação - gerar com:
+   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+
+4. Rodar o sistema:
+   npm start
+   
+   Ou manualmente:
+   node backend/server.js
+
+5. Acessar o sistema:
+   Abra o navegador em: http://localhost:3000
+   
+   Faça login com:
+   - Usuário: admin
+   - Senha: Galeto@2026
+
+Tecnologias Utilizadas:
+- Frontend: HTML5, CSS3, JavaScript Vanilla
+- Backend: Node.js com Express
+- Banco de Dados: MySQL2 (pool de conexões)
+- Template: EJS (para renderização das views)
+- SVG para ícones (library própria)
+
+================================================================================
+FINALIZAÇÃO
+================================================================================
+
+Este documento descreve todas as funcionalidades do sistema Galeto Gestão na
+versão de desenvolvimento local com MySQL.
+
+Para dúvidas ou suporte, consulte o desenvolvedor do projeto ou verifique
+o código-fonte nos respectivos módulos.
+
+Versão: 1.0 - Novembro 2026
+Sistema: Galeto Gestão - Galeto São Luís
